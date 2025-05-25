@@ -1,0 +1,530 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              Int              @id @default(autoincrement())
+  uuid            String           @unique @default(uuid())
+  name            String
+  email           String           @unique
+  password        String?
+  image           String?
+  avatar          String?
+  bio             String?
+  role            String           @default("REGISTERED")
+  status          String           @default("PENDING")
+  telegramUsername String?         // Telegram 用户名（选填）
+  telegramId      String?          // Telegram ID（选填）
+  applicationReason String?        // 申请原因（选填）
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  deletedAt       DateTime?
+  userGroupId     Int?
+  comments        Comment[]
+  likes           Like[]
+  favorites       Favorite[]
+  media           Media[]
+  mediaVersions   MediaVersion[]
+  pages           Page[]
+  pageVersions    PageVersion[]
+  pointPurchases  PointPurchase[]
+  reviewFeedbacks ReviewFeedback[]
+  signInRecords   SignInRecord[]
+  userGroup       UserGroup?       @relation(fields: [userGroupId], references: [id])
+  userPoint       UserPoint?
+  socialAccounts  SocialAccount[]
+  contentTemplates ContentTemplate[]
+
+  @@index([email])
+  @@index([role])
+  @@index([status])
+  @@index([telegramUsername])
+  @@index([telegramId])
+}
+
+model UserGroup {
+  id                Int      @id @default(autoincrement())
+  uuid              String   @unique @default(uuid())
+  name              String
+  description       String?
+  permissions       String
+  uploadLimits      String?
+  previewPercentage Int      @default(100)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  users             User[]
+}
+
+model Page {
+  id                 Int              @id @default(autoincrement())
+  uuid               String           @unique @default(uuid())
+  title              String
+  content            String
+  contentBlocks      String?
+  excerpt            String?
+  coverImage         String?          // 封面图片URL
+  status             String           @default("DRAFT")
+  featured           Boolean          @default(false)
+  publishedAt        DateTime?
+  scheduledPublishAt DateTime?
+  scheduledArchiveAt DateTime?
+  viewCount          Int              @default(0)
+  likeCount          Int              @default(0)
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  deletedAt          DateTime?
+  userId             Int
+  categoryId         Int?
+  comments           Comment[]
+  likes              Like[]
+  favorites          Favorite[]
+  category           Category?        @relation(fields: [categoryId], references: [id])
+  user               User             @relation(fields: [userId], references: [id])
+  pageTags           PageTag[]
+  versions           PageVersion[]
+  reviewFeedbacks    ReviewFeedback[]
+
+  @@index([userId])
+  @@index([categoryId])
+  @@index([status])
+  @@index([featured])
+  @@index([publishedAt])
+  @@index([scheduledPublishAt])
+  @@index([scheduledArchiveAt])
+  @@index([createdAt])
+  @@index([deletedAt])
+  // 复合索引优化查询性能
+  @@index([uuid, deletedAt])
+  @@index([status, deletedAt])
+  @@index([status, featured, createdAt])
+  @@index([categoryId, status, deletedAt])
+  @@index([featured, createdAt])
+}
+
+model Category {
+  id          Int        @id @default(autoincrement())
+  uuid        String     @unique @default(uuid())
+  name        String     @unique
+  slug        String     @unique
+  description String?
+  parentId    Int?
+  order       Int        @default(0)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  parent      Category?  @relation("CategoryToCategory", fields: [parentId], references: [id])
+  children    Category[] @relation("CategoryToCategory")
+  pages       Page[]
+
+  @@index([parentId])
+  @@index([slug])
+  @@index([order])
+}
+
+model PageVersion {
+  id            Int      @id @default(autoincrement())
+  uuid          String   @unique @default(uuid())
+  title         String
+  content       String
+  contentBlocks String?
+  versionNumber Int
+  changeLog     String?
+  createdAt     DateTime @default(now())
+  pageId        Int
+  userId        Int
+  user          User     @relation(fields: [userId], references: [id])
+  page          Page     @relation(fields: [pageId], references: [id], onDelete: Cascade)
+
+  @@unique([pageId, versionNumber])
+  @@index([pageId])
+  @@index([userId])
+}
+
+model ReviewFeedback {
+  id         Int      @id @default(autoincrement())
+  uuid       String   @unique @default(uuid())
+  content    String
+  status     String
+  createdAt  DateTime @default(now())
+  pageId     Int
+  reviewerId Int
+  reviewer   User     @relation(fields: [reviewerId], references: [id])
+  page       Page     @relation(fields: [pageId], references: [id], onDelete: Cascade)
+
+  @@index([pageId])
+  @@index([reviewerId])
+  @@index([status])
+}
+
+model Tag {
+  id           Int           @id @default(autoincrement())
+  uuid         String        @unique @default(uuid())
+  name         String        @unique
+  slug         String        @unique
+  description  String?
+  useCount     Int           @default(0)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  deletedAt    DateTime?     // 软删除字段
+  pageTags     PageTag[]
+  templateTags TemplateTag[]
+
+  @@index([name])
+  @@index([slug])
+  @@index([useCount])
+  @@index([deletedAt])
+}
+
+model PageTag {
+  id        Int      @id @default(autoincrement())
+  pageId    Int
+  tagId     Int
+  createdAt DateTime @default(now())
+  tag       Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  page      Page     @relation(fields: [pageId], references: [id], onDelete: Cascade)
+
+  @@unique([pageId, tagId])
+  @@index([pageId])
+  @@index([tagId])
+}
+
+model Comment {
+  id          Int       @id @default(autoincrement())
+  uuid        String    @unique @default(uuid())
+  content     String
+  isAnonymous Boolean   @default(false)
+  nickname    String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+  pageId      Int
+  userId      Int?
+  parentId    Int?
+  parent      Comment?  @relation("CommentToComment", fields: [parentId], references: [id])
+  replies     Comment[] @relation("CommentToComment")
+  user        User?     @relation(fields: [userId], references: [id])
+  page        Page      @relation(fields: [pageId], references: [id])
+
+  @@index([pageId])
+  @@index([userId])
+  @@index([parentId])
+  // 复合索引优化评论查询
+  @@index([pageId, parentId, deletedAt])
+  @@index([pageId, deletedAt, createdAt])
+}
+
+model Like {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  userId    Int
+  pageId    Int
+  page      Page     @relation(fields: [pageId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@unique([userId, pageId])
+  @@index([userId])
+  @@index([pageId])
+}
+
+model Favorite {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  userId    Int
+  pageId    Int
+  page      Page     @relation(fields: [pageId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@unique([userId, pageId])
+  @@index([userId])
+  @@index([pageId])
+}
+
+model Media {
+  id           Int            @id @default(autoincrement())
+  uuid         String         @unique @default(uuid())
+  type         String
+  url          String
+  title        String?
+  description  String?
+  fileSize     Int?
+  size         Int?           // 文件大小（字节）
+  mimeType     String?
+  width        Int?
+  height       Int?
+  duration     Int?
+  thumbnailUrl String?        // 缩略图URL
+  storageType  String         @default("LOCAL")
+  status       String         @default("ACTIVE")
+  usageCount   Int            @default(0)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  deletedAt    DateTime?
+  userId       Int
+  categoryId   Int?
+  category     MediaCategory? @relation(fields: [categoryId], references: [id])
+  user         User           @relation(fields: [userId], references: [id])
+  versions     MediaVersion[]
+  mediaTags    MediaTag[]     @relation("MediaToMediaTag")
+
+  @@index([type])
+  @@index([userId])
+  @@index([categoryId])
+  @@index([status])
+  @@index([createdAt])
+  @@index([deletedAt])
+}
+
+model MediaCategory {
+  id          Int             @id @default(autoincrement())
+  uuid        String          @unique @default(uuid())
+  name        String
+  description String?
+  slug        String          @unique
+  parentId    Int?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  deletedAt   DateTime?
+  media       Media[]
+  parent      MediaCategory?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children    MediaCategory[] @relation("CategoryHierarchy")
+
+  @@index([parentId])
+  @@index([slug])
+  @@index([deletedAt])
+}
+
+model MediaTag {
+  id          Int      @id @default(autoincrement())
+  uuid        String   @unique @default(uuid())
+  name        String   @unique
+  description String?
+  color       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  deletedAt   DateTime?
+  media       Media[]  @relation("MediaToMediaTag")
+
+  @@index([name])
+  @@index([deletedAt])
+}
+
+model MediaVersion {
+  id            Int      @id @default(autoincrement())
+  uuid          String   @unique @default(uuid())
+  url           String
+  versionNumber Int
+  fileSize      Int?
+  width         Int?
+  height        Int?
+  duration      Int?
+  thumbnailUrl  String?
+  changeNote    String?
+  createdAt     DateTime @default(now())
+  mediaId       Int
+  userId        Int
+  user          User     @relation(fields: [userId], references: [id])
+  media         Media    @relation(fields: [mediaId], references: [id])
+
+  @@index([mediaId])
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model UserPoint {
+  id           Int                @id @default(autoincrement())
+  uuid         String             @unique @default(uuid())
+  userId       Int                @unique
+  balance      Int                @default(0)
+  totalEarned  Int                @default(0)
+  totalSpent   Int                @default(0)
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  transactions PointTransaction[]
+  user         User               @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+}
+
+model PointTransaction {
+  id          Int       @id @default(autoincrement())
+  uuid        String    @unique @default(uuid())
+  userPointId Int
+  amount      Int
+  type        String
+  description String
+  metadata    String?
+  createdAt   DateTime  @default(now())
+  userPoint   UserPoint @relation(fields: [userPointId], references: [id])
+
+  @@index([userPointId])
+  @@index([type])
+  @@index([createdAt])
+}
+
+model SignInRecord {
+  id             Int      @id @default(autoincrement())
+  userId         Int
+  signInDate     DateTime @default(now())
+  continuousDays Int      @default(1)
+  pointsEarned   Int
+  user           User     @relation(fields: [userId], references: [id])
+
+  @@unique([userId, signInDate])
+  @@index([userId])
+  @@index([signInDate])
+}
+
+model PointProduct {
+  id          Int             @id @default(autoincrement())
+  uuid        String          @unique @default(uuid())
+  name        String
+  description String
+  pointCost   Int
+  type        String
+  duration    Int?
+  stock       Int?
+  enabled     Boolean         @default(true)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  purchases   PointPurchase[]
+}
+
+model PointPurchase {
+  id        Int          @id @default(autoincrement())
+  uuid      String       @unique @default(uuid())
+  userId    Int
+  productId Int
+  pointCost Int
+  status    String
+  expiresAt DateTime?
+  createdAt DateTime     @default(now())
+  product   PointProduct @relation(fields: [productId], references: [id])
+  user      User         @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([productId])
+  @@index([status])
+  @@index([expiresAt])
+}
+
+model SystemSetting {
+  id          Int      @id @default(autoincrement())
+  key         String   @unique
+  value       String
+  type        String
+  group       String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([key])
+  @@index([group])
+}
+
+model SystemLog {
+  id        Int      @id @default(autoincrement())
+  level     String
+  module    String
+  action    String
+  message   String
+  details   String?
+  ipAddress String?
+  userAgent String?
+  userId    Int?
+  createdAt DateTime @default(now())
+
+  @@index([level])
+  @@index([module])
+  @@index([action])
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model SystemBackup {
+  id          Int       @id @default(autoincrement())
+  filename    String
+  size        Int
+  type        String
+  status      String
+  notes       String?
+  createdById Int?
+  createdAt   DateTime  @default(now())
+  completedAt DateTime?
+
+  @@index([type])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model SocialAccount {
+  id           Int      @id @default(autoincrement())
+  uuid         String   @unique @default(uuid())
+  userId       Int
+  provider     String   // 'telegram', 'github', 'google'
+  providerId   String   // 社交平台的用户ID
+  username     String?  // 社交平台的用户名
+  displayName  String?  // 社交平台的显示名称
+  email        String?  // 社交平台的邮箱
+  avatar       String?  // 社交平台的头像
+  accessToken  String?  // 访问令牌（加密存储）
+  refreshToken String?  // 刷新令牌（加密存储）
+  expiresAt    DateTime? // 令牌过期时间
+  metadata     String?  // 其他元数据（JSON格式）
+  isVerified   Boolean  @default(false) // 是否已验证
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerId])
+  @@unique([userId, provider])
+  @@index([userId])
+  @@index([provider])
+  @@index([providerId])
+  @@index([isVerified])
+}
+
+// 内容模板模型
+model ContentTemplate {
+  id          Int           @id @default(autoincrement())
+  uuid        String        @unique @default(uuid())
+  title       String        // 模板标题
+  content     String        // 模板内容（富文本）
+  type        String        @default("GENERAL") // 模板类型：HEADER, FOOTER, GENERAL
+  description String?       // 模板描述
+  isPublic    Boolean       @default(false) // 是否公开（多用户共享）
+  isActive    Boolean       @default(true) // 是否启用
+  useCount    Int           @default(0) // 使用次数
+  sortOrder   Int           @default(0) // 排序顺序
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  deletedAt   DateTime?
+  userId      Int           // 创建者
+  user        User          @relation(fields: [userId], references: [id])
+  templateTags TemplateTag[] // 关联标签
+
+  @@index([userId])
+  @@index([type])
+  @@index([isPublic])
+  @@index([isActive])
+  @@index([useCount])
+  @@index([sortOrder])
+  @@index([deletedAt])
+}
+
+// 模板-标签关联模型
+model TemplateTag {
+  id         Int             @id @default(autoincrement())
+  templateId Int
+  tagId      Int
+  createdAt  DateTime        @default(now())
+  template   ContentTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  tag        Tag             @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@unique([templateId, tagId])
+  @@index([templateId])
+  @@index([tagId])
+}

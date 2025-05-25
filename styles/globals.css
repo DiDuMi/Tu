@@ -1,0 +1,151 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    @apply text-gray-900;
+  }
+
+  body {
+    @apply bg-gray-50 transition-colors duration-200;
+  }
+
+  /* 暗色模式基础样式 */
+  .dark body {
+    @apply bg-dark-bg text-dark-text;
+  }
+
+  h1 {
+    @apply text-3xl font-bold;
+  }
+
+  h2 {
+    @apply text-2xl font-bold;
+  }
+
+  h3 {
+    @apply text-xl font-bold;
+  }
+
+  h4 {
+    @apply text-lg font-bold;
+  }
+
+  h5 {
+    @apply text-base font-bold;
+  }
+
+  h6 {
+    @apply text-sm font-bold;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-md font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors duration-200;
+  }
+
+  .btn-primary {
+    @apply btn bg-primary-500 text-white hover:bg-primary-600 focus:ring-primary-500;
+  }
+
+  .btn-secondary {
+    @apply btn bg-secondary-500 text-white hover:bg-secondary-600 focus:ring-secondary-500;
+  }
+
+  .btn-success {
+    @apply btn bg-success-500 text-white hover:bg-success-600 focus:ring-success-500;
+  }
+
+  .btn-warning {
+    @apply btn bg-warning-500 text-white hover:bg-warning-600 focus:ring-warning-500;
+  }
+
+  .btn-error {
+    @apply btn bg-error-500 text-white hover:bg-error-600 focus:ring-error-500;
+  }
+
+  .btn-outline {
+    @apply btn bg-white border-gray-300 text-gray-700 hover:bg-gray-50;
+  }
+
+  /* 暗色模式按钮样式 */
+  .dark .btn-outline {
+    @apply bg-dark-card border-dark-border text-dark-text hover:bg-dark-border;
+  }
+
+  .input {
+    @apply block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm transition-colors duration-200;
+  }
+
+  /* 暗色模式输入框样式 */
+  .dark .input {
+    @apply bg-dark-card border-dark-border text-dark-text placeholder-dark-muted focus:ring-dark-primary focus:border-dark-primary;
+  }
+
+  .card {
+    @apply bg-white shadow rounded-lg overflow-hidden transition-colors duration-200;
+  }
+
+  /* 暗色模式卡片样式 */
+  .dark .card {
+    @apply bg-dark-card shadow-md border border-dark-border;
+  }
+
+  /* 主题颜色类 */
+  .theme-blue .btn-primary {
+    @apply bg-primary-500 hover:bg-primary-600 focus:ring-primary-500;
+  }
+
+  .theme-purple .btn-primary {
+    @apply bg-purple-500 hover:bg-purple-600 focus:ring-purple-500;
+  }
+
+  .theme-green .btn-primary {
+    @apply bg-green-500 hover:bg-green-600 focus:ring-green-500;
+  }
+
+  .theme-orange .btn-primary {
+    @apply bg-orange-500 hover:bg-orange-600 focus:ring-orange-500;
+  }
+
+  /* 云媒体容器样式 */
+  .cloud-video-container {
+    @apply block mx-auto w-full mb-4;
+  }
+
+  .cloud-video-container iframe {
+    @apply w-full border-0 block;
+    height: 480px;
+  }
+
+  .cloud-video-container video {
+    @apply w-full block;
+    max-height: 480px;
+  }
+
+  /* 响应式云媒体 */
+  @media (max-width: 768px) {
+    .cloud-video-container iframe {
+      height: 240px;
+    }
+
+    .cloud-video-container video {
+      max-height: 240px;
+    }
+  }
+
+  /* 内容区域的云媒体样式 */
+  .prose .cloud-video-container {
+    @apply my-6;
+  }
+
+  .prose .cloud-video-container iframe {
+    @apply rounded-lg shadow-sm;
+  }
+
+  .prose .cloud-video-container video {
+    @apply rounded-lg shadow-sm;
+  }
+}

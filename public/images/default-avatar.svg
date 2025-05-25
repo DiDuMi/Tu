@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="40px" height="40px" viewBox="0 0 40 40" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>Default Avatar</title>
+    <g id="Default-Avatar" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <circle id="Background" fill="#E5E7EB" cx="20" cy="20" r="20"></circle>
+        <g id="User" transform="translate(8, 5)">
+            <!-- User Head -->
+            <circle id="Head" fill="#9CA3AF" cx="12" cy="10" r="8"></circle>
+            
+            <!-- User Body -->
+            <path d="M0,30 C0,22 5,18 12,18 C19,18 24,22 24,30 L0,30 Z" id="Body" fill="#9CA3AF"></path>
+        </g>
+    </g>
+</svg>

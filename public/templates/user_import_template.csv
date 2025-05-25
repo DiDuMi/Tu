@@ -1,0 +1,4 @@
+name,email,role,status,userGroup
+张三,zhangsan@example.com,REGISTERED,ACTIVE,普通会员
+李四,lisi@example.com,MEMBER,ACTIVE,高级会员
+王五,wangwu@example.com,REGISTERED,PENDING,
