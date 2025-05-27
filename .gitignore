@@ -36,6 +36,53 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# 数据库文件
+*.db
+*.db-journal
+/prisma/*.db
+/prisma/*.db-journal
+
+# 日志文件
+/logs
+*.log
+
+# 上传文件
+/public/uploads
+/uploads
+
+# 备份文件
+*.backup
+*.bak
+
+# 临时文件
+*.tmp
+*.temp
+
+# IDE文件
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 系统文件
+Thumbs.db
+
+# PM2文件
+ecosystem.config.js
+
+# 部署脚本
+server-deploy.sh
+update-and-deploy.ps1
+
+# 缓存文件
+.cache/
+.npm/
+.eslintcache
+
+# 构建文件
+dist/
+build/
+
 # database
 /prisma/dev.db
 /prisma/dev.db-journal
