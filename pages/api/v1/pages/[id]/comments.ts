@@ -5,6 +5,7 @@ import { successResponse, errorResponse } from '@/lib/api'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/pages/api/auth/[...nextauth]'
 import { z } from 'zod'
+import { getOrCreateGuestId, filterVisibleComments } from '@/lib/guestIdentity'
 
 // 创建评论验证模式
 const createCommentSchema = z.object({
@@ -12,6 +13,8 @@ const createCommentSchema = z.object({
   parentId: z.number().optional(),
   isAnonymous: z.boolean().optional().default(false),
   nickname: z.string().optional(),
+  email: z.string().email('邮箱格式不正确').optional().or(z.literal('')),
+  guestId: z.string().optional(),
 })
 
 async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -63,6 +66,13 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
   // GET 请求 - 获取评论列表
   if (req.method === 'GET') {
     try {
+      const session = await getServerSession(req, res, authOptions)
+      const userId = session?.user?.id ? parseInt(session.user.id) : null
+      const isAdmin = session?.user?.role === 'ADMIN'
+
+      // 获取游客ID（从请求头或查询参数）
+      const guestId = req.headers['x-guest-id'] as string || req.query.guestId as string
+
       const comments = await prisma.comment.findMany({
         where: {
           pageId: page.id,
@@ -120,7 +130,10 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
         })),
       }))
 
-      return successResponse(res, formattedComments)
+      // 过滤评论，只返回对当前用户可见的评论
+      const visibleComments = filterVisibleComments(formattedComments, userId, guestId, isAdmin)
+
+      return successResponse(res, visibleComments)
     } catch (error) {
       console.error('获取评论列表失败:', error)
       return errorResponse(
@@ -162,7 +175,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
         )
       }
 
-      const { content, parentId, isAnonymous, nickname } = validationResult.data
+      const { content, parentId, isAnonymous, nickname, email, guestId } = validationResult.data
 
       // 如果是匿名评论，检查昵称
       if (isAnonymous && !nickname) {
@@ -173,6 +186,13 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
           undefined,
           422
         )
+      }
+
+      // 获取或生成游客ID
+      let finalGuestId = guestId
+      if (!session && !finalGuestId) {
+        // 如果没有提供游客ID，生成一个临时ID
+        finalGuestId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
       }
 
       // 如果有parentId，检查父评论是否存在
@@ -193,15 +213,30 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       }
 
       // 创建评论
+      const commentData: any = {
+        content,
+        pageId: page.id,
+        isAnonymous: isAnonymous || !session,
+        status: 'PENDING', // 默认为待审核状态
+      }
+
+      // 只在有值时添加字段
+      if (session && !isAnonymous) {
+        commentData.userId = parseInt(session.user.id)
+      }
+
+      if (parentId) {
+        commentData.parentId = parentId
+      }
+
+      if (isAnonymous || !session) {
+        if (nickname) commentData.nickname = nickname
+        if (email) commentData.email = email
+        if (finalGuestId) commentData.guestId = finalGuestId
+      }
+
       const comment = await prisma.comment.create({
-        data: {
-          content,
-          pageId: page.id,
-          userId: isAnonymous ? null : parseInt(session.user.id),
-          parentId,
-          isAnonymous,
-          nickname: isAnonymous ? nickname : null,
-        },
+        data: commentData,
         include: {
           user: {
             select: {
@@ -224,7 +259,13 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
         } : null,
       }
 
-      return successResponse(res, formattedComment, '评论发表成功')
+      // 返回评论数据，包含游客ID（如果适用）
+      const responseData = {
+        ...formattedComment,
+        guestId: !session ? finalGuestId : undefined,
+      }
+
+      return successResponse(res, responseData, '评论发表成功，等待审核')
     } catch (error) {
       console.error('创建评论失败:', error)
       return errorResponse(

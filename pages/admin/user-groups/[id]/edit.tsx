@@ -46,16 +46,54 @@ export default function EditUserGroup() {
     if (groupData?.success) {
       setUserGroup(groupData.data)
       // 确保权限配置包含所有必要的字段
-      const permissions = groupData.data.permissions || {}
+      let permissions: Record<string, string[]> = {}
 
-      // 如果没有视频权限配置，初始化为空数组
-      if (!permissions.video) {
-        permissions.video = []
+      try {
+        // 如果permissions是字符串，尝试解析
+        if (typeof groupData.data.permissions === 'string') {
+          const parsed = JSON.parse(groupData.data.permissions)
+          permissions = normalizePermissions(parsed)
+        } else if (typeof groupData.data.permissions === 'object' && groupData.data.permissions !== null) {
+          permissions = normalizePermissions(groupData.data.permissions)
+        }
+      } catch (error) {
+        console.error('解析权限数据失败:', error)
+        permissions = {}
       }
 
+      console.log('加载的权限数据:', permissions)
       setPermissions(permissions)
     }
   }, [groupData])
+
+  // 标准化权限数据，确保所有值都是字符串数组
+  const normalizePermissions = (perms: any): Record<string, string[]> => {
+    const normalized: Record<string, string[]> = {}
+
+    if (typeof perms === 'object' && perms !== null) {
+      Object.keys(perms).forEach(key => {
+        const value = perms[key]
+        if (Array.isArray(value)) {
+          // 如果已经是数组，直接使用
+          normalized[key] = value.filter(item => typeof item === 'string')
+        } else if (typeof value === 'boolean' && value) {
+          // 如果是true，转换为包含key的数组
+          normalized[key] = [key]
+        } else if (typeof value === 'string') {
+          // 如果是字符串，转换为数组
+          normalized[key] = [value]
+        } else if (typeof value === 'object' && value !== null) {
+          // 如果是对象，提取为true的键
+          const actions = Object.keys(value).filter(action => value[action] === true)
+          if (actions.length > 0) {
+            normalized[key] = actions
+          }
+        }
+      })
+    }
+
+    return normalized
+  }
 
   // 更新用户组的API调用
   const { put: updateUserGroup, loading: updateLoading, error: updateError } = useMutation(`/api/v1/user-groups/${id}`)
@@ -82,6 +120,9 @@ export default function EditUserGroup() {
     validationSchema: updateUserGroupSchema,
     onSubmit: async (values) => {
       try {
+        console.log('提交表单数据:', values)
+        console.log('权限配置:', permissions)
+
         // 解析允许的文件类型
         const allowedTypes = values.allowedTypes
           ? values.allowedTypes.split(',').map(type => type.trim()).filter(Boolean)
@@ -93,20 +134,28 @@ export default function EditUserGroup() {
           allowedTypes,
         }
 
-        const result = await updateUserGroup({
+        const payload = {
           name: values.name,
           description: values.description || undefined,
           permissions,
           uploadLimits,
           previewPercentage: values.previewPercentage,
-        })
+        }
+
+        console.log('发送的请求数据:', payload)
+
+        const result = await updateUserGroup(payload)
 
         if (result.success) {
+          console.log('更新成功，跳转到详情页')
           // 更新成功，跳转到用户组详情页
           router.push(`/admin/user-groups/${id}`)
+        } else {
+          console.error('更新失败:', result)
         }
       } catch (error) {
         console.error('更新用户组失败:', error)
+        // 错误已经通过useMutation的error状态处理
       }
     },
   })
@@ -187,7 +236,9 @@ export default function EditUserGroup() {
         <Alert variant="error" className="mb-6">
           <AlertTitle>更新失败</AlertTitle>
           <AlertDescription>
-            {typeof updateError === 'string'
+            {updateError instanceof Error
+              ? updateError.message
+              : typeof updateError === 'string'
               ? updateError
               : '更新用户组时发生错误，请稍后重试'}
           </AlertDescription>

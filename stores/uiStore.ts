@@ -38,7 +38,7 @@ interface UIState {
 export const useUIStore = create<UIState>()(
   persist(
     (set, get) => ({
-      sidebarOpen: false,
+      sidebarOpen: true,
       themeMode: 'system',
       themeColor: 'blue',
       layoutMode: 'comfortable',
@@ -47,8 +47,12 @@ export const useUIStore = create<UIState>()(
       highContrast: false,
       reducedMotion: false,
       homeLayoutMode: 'default',
-      homeSidebarExpanded: false,
-      toggleSidebar: () => set((state) => ({ sidebarOpen: !state.sidebarOpen })),
+      homeSidebarExpanded: true,
+      toggleSidebar: () => set((state) => {
+        const newState = !state.sidebarOpen
+        console.log(`[UIStore] 切换侧边栏: ${state.sidebarOpen} → ${newState}`)
+        return { sidebarOpen: newState }
+      }),
       setSidebarOpen: (open) => set({ sidebarOpen: open }),
       toggleThemeMode: () => set((state) => {
         // 循环切换：亮色 -> 暗色 -> 系统 -> 亮色
@@ -75,7 +79,7 @@ export const useUIStore = create<UIState>()(
         highContrast: false,
         reducedMotion: false,
         homeLayoutMode: 'default',
-        homeSidebarExpanded: false,
+        homeSidebarExpanded: true,
       }),
       setHomeLayoutMode: (mode) => set({ homeLayoutMode: mode }),
       toggleHomeSidebar: () => set((state) => ({ homeSidebarExpanded: !state.homeSidebarExpanded })),
@@ -91,6 +95,7 @@ export const useUIStore = create<UIState>()(
     {
       name: 'rabbit-ui-storage',
       partialize: (state) => ({
+        sidebarOpen: state.sidebarOpen,
         themeMode: state.themeMode,
         themeColor: state.themeColor,
         layoutMode: state.layoutMode,

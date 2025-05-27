@@ -27,7 +27,7 @@ const ACTIONS = [
 
 // 首页分类权限操作定义
 const HOMEPAGE_ACTIONS = [
-  { id: 'featured', name: '精选内容' },
+  { id: 'featured', name: '精选推荐' },
   { id: 'latest', name: '近期流出' },
   { id: 'archive', name: '往期补档' },
   { id: 'trending', name: '热门推荐' },
@@ -38,8 +38,8 @@ export default function PermissionSelector({ permissions, onChange }: Permission
   const handlePermissionChange = (resource: string, action: string, checked: boolean) => {
     const newPermissions = { ...permissions }
 
-    // 如果资源不存在，创建一个空数组
-    if (!newPermissions[resource]) {
+    // 确保资源权限是数组
+    if (!newPermissions[resource] || !Array.isArray(newPermissions[resource])) {
       newPermissions[resource] = []
     }
 
@@ -63,7 +63,13 @@ export default function PermissionSelector({ permissions, onChange }: Permission
 
   // 检查权限是否已选中
   const isPermissionChecked = (resource: string, action: string): boolean => {
-    return permissions[resource]?.includes(action) || false
+    const resourcePermissions = permissions[resource]
+
+    // 确保resourcePermissions是数组
+    if (!resourcePermissions) return false
+    if (!Array.isArray(resourcePermissions)) return false
+
+    return resourcePermissions.includes(action)
   }
 
   // 获取资源可用的操作

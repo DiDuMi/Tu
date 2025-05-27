@@ -1,16 +1,17 @@
-import React, { useRef, useEffect, useState } from 'react'
 import { Editor } from '@tinymce/tinymce-react'
+import React, { useRef, useEffect, useState } from 'react'
+
+import { applyExtendedTranslations } from '@/lib/tinymce-i18n'
+
+import BatchUploadDialog from './BatchUploadDialog'
 import {
   tinyMCEPlugins,
   tinyMCEToolbar,
   tinyMCEContentStyle,
-  createImageUploadHandler,
   setupCustomButtons,
   setupPasteHandler
 } from './TinyMCEConfig'
 import { setupMediaSortButton } from './TinyMCEMediaSort'
-import { applyExtendedTranslations } from '@/lib/tinymce-i18n'
-import BatchUploadDialog from './BatchUploadDialog'
 
 // 确保TinyMCE编辑器加载中文语言包
 const TINYMCE_SCRIPT_SRC = [
@@ -39,30 +40,51 @@ const TinyMCEEditor: React.FC<TinyMCEEditorProps> = ({
   const [showBatchUpload, setShowBatchUpload] = useState(false)
   const [draggedFiles, setDraggedFiles] = useState<File[]>([])
 
-  // 监听批量上传事件
-  useEffect(() => {
-    const handleBatchUpload = (event: CustomEvent) => {
-      const { files } = event.detail
-      if (files && files.length > 0) {
-        setDraggedFiles(files)
-      }
-      setShowBatchUpload(true)
-    }
 
-    window.addEventListener('openBatchUpload', handleBatchUpload as EventListener)
-
-    return () => {
-      window.removeEventListener('openBatchUpload', handleBatchUpload as EventListener)
-    }
-  }, [])
 
   // 处理批量上传完成
   const handleUploadComplete = (mediaList: any[]) => {
     if (editorRef.current && mediaList.length > 0) {
       console.log('批量上传完成，插入媒体:', mediaList)
 
+      // 确保编辑器获得焦点
+      editorRef.current.focus()
+
+      // 去重处理：基于URL去重，避免重复插入相同的媒体
+      const uniqueMedia = mediaList.filter((media, index, array) => {
+        return array.findIndex(m => m.url === media.url) === index
+      })
+
+      console.log('去重后的媒体列表:', uniqueMedia)
+
+      // 进一步检查：避免插入已经存在于编辑器中的媒体
+      const currentContent = editorRef.current.getContent()
+      const finalMediaList = uniqueMedia.filter(media => {
+        const normalizedUrl = media.url.replace(/\\/g, '/')
+        // 检查当前内容中是否已经包含这个URL
+        const urlExists = currentContent.includes(normalizedUrl) || currentContent.includes(media.url)
+        if (urlExists) {
+          console.log('跳过已存在的媒体:', normalizedUrl)
+          return false
+        }
+        return true
+      })
+
+      console.log('最终要插入的媒体列表:', finalMediaList)
+
+      if (finalMediaList.length === 0) {
+        console.log('没有新的媒体需要插入')
+        editorRef.current.notificationManager.open({
+          text: '所有媒体文件已存在于编辑器中',
+          type: 'info',
+          timeout: 3000,
+        })
+        setShowBatchUpload(false)
+        return
+      }
+
       // 生成媒体HTML并插入编辑器
-      const mediaHtml = mediaList.map(media => {
+      const mediaHtml = finalMediaList.map(media => {
         // 确保URL使用正斜杠格式
         const normalizedUrl = media.url.replace(/\\/g, '/')
         console.log('处理媒体:', { type: media.type, url: normalizedUrl, title: media.title })
@@ -89,8 +111,29 @@ const TinyMCEEditor: React.FC<TinyMCEEditorProps> = ({
 
       console.log('生成的HTML:', mediaHtml)
 
-      // 插入到编辑器
-      editorRef.current.insertContent(mediaHtml)
+      // 安全地插入内容到光标位置
+      try {
+        // 如果有选中的内容，在选中内容后插入
+        const selection = editorRef.current.selection
+        if (selection && !selection.isCollapsed()) {
+          // 有选中内容，移动光标到选中内容的末尾
+          selection.collapse(false)
+        }
+
+        // 插入媒体内容
+        editorRef.current.insertContent(mediaHtml)
+
+        // 确保光标移动到插入内容的末尾
+        const range = editorRef.current.selection.getRng()
+        range.collapse(false)
+        editorRef.current.selection.setRng(range)
+
+      } catch (error) {
+        console.error('插入内容时出错:', error)
+        // 降级方案：在内容末尾添加
+        const newContent = currentContent + '\n' + mediaHtml
+        editorRef.current.setContent(newContent)
+      }
 
       // 触发内容变化事件，确保父组件能获取到更新的内容
       if (onChange) {
@@ -101,7 +144,7 @@ const TinyMCEEditor: React.FC<TinyMCEEditorProps> = ({
 
       // 显示成功通知
       editorRef.current.notificationManager.open({
-        text: `成功插入 ${mediaList.length} 个媒体文件`,
+        text: `成功插入 ${finalMediaList.length} 个媒体文件`,
         type: 'success',
         timeout: 3000,
       })
@@ -109,6 +152,26 @@ const TinyMCEEditor: React.FC<TinyMCEEditorProps> = ({
 
     setShowBatchUpload(false)
   }
+
+
+
+  // 监听批量上传事件
+  useEffect(() => {
+    const handleOpenBatchUpload = (event: CustomEvent) => {
+      console.log('收到批量上传事件:', event.detail)
+      const files = event.detail?.files || []
+      setDraggedFiles(files)
+      setShowBatchUpload(true)
+    }
+
+    // 添加事件监听器
+    window.addEventListener('openBatchUpload', handleOpenBatchUpload as EventListener)
+
+    // 清理函数
+    return () => {
+      window.removeEventListener('openBatchUpload', handleOpenBatchUpload as EventListener)
+    }
+  }, [])
 
   // 确保中文语言包已加载并应用扩展翻译
   useEffect(() => {
@@ -180,35 +243,16 @@ const TinyMCEEditor: React.FC<TinyMCEEditorProps> = ({
         // 允许所有HTML元素和属性
         valid_elements: '*[*]',
         valid_children: '*[*]',
-        images_upload_handler: createImageUploadHandler,
-        // 启用文件拖拽上传
-        paste_data_images: true,
-        file_picker_types: 'image media',
-        // 自定义文件选择器
-        file_picker_callback: (_callback: any, _value: any, meta: any) => {
-          // 创建文件输入元素
-          const input = document.createElement('input')
-          input.setAttribute('type', 'file')
-
-          if (meta.filetype === 'image') {
-            input.setAttribute('accept', 'image/*')
-          } else if (meta.filetype === 'media') {
-            input.setAttribute('accept', 'video/*,audio/*')
-          }
-
-          input.onchange = function() {
-            const file = (this as HTMLInputElement).files?.[0]
-            if (file) {
-              // 使用批量上传处理
-              const event = new CustomEvent('openBatchUpload', {
-                detail: { files: [file] }
-              })
-              window.dispatchEvent(event)
-            }
-          }
-
-          input.click()
+        // 禁用内置的图片上传处理器，统一使用批量上传
+        images_upload_handler: () => {
+          console.log('内置图片上传被禁用，请使用批量上传功能')
+          return Promise.reject('请使用批量上传功能')
         },
+        // 禁用文件拖拽上传到编辑器，统一使用批量上传
+        paste_data_images: false,
+        // 禁用文件选择器，统一使用批量上传
+        file_picker_types: '',
+        file_picker_callback: undefined,
         setup: (editor: any) => {
           // 设置自定义按钮
           setupCustomButtons(editor)
@@ -218,9 +262,20 @@ const TinyMCEEditor: React.FC<TinyMCEEditorProps> = ({
           setupPasteHandler(editor)
 
           // 设置拖拽上传处理
+          let dropPosition: any = null
+
           editor.on('dragover dragenter', (e: any) => {
             e.preventDefault()
             e.stopPropagation()
+
+            // 记录拖拽位置
+            const range = editor.selection.getRng()
+            dropPosition = {
+              startContainer: range.startContainer,
+              startOffset: range.startOffset,
+              endContainer: range.endContainer,
+              endOffset: range.endOffset
+            }
           })
 
           editor.on('drop', (e: any) => {
@@ -229,6 +284,18 @@ const TinyMCEEditor: React.FC<TinyMCEEditorProps> = ({
 
             const files = Array.from(e.dataTransfer?.files || [])
             if (files.length > 0) {
+              // 设置光标到拖拽位置
+              if (dropPosition) {
+                try {
+                  const range = editor.dom.createRng()
+                  range.setStart(dropPosition.startContainer, dropPosition.startOffset)
+                  range.setEnd(dropPosition.endContainer, dropPosition.endOffset)
+                  editor.selection.setRng(range)
+                } catch (error) {
+                  console.warn('设置拖拽位置失败:', error)
+                }
+              }
+
               // 触发批量上传
               const event = new CustomEvent('openBatchUpload', {
                 detail: { files }
@@ -246,9 +313,9 @@ const TinyMCEEditor: React.FC<TinyMCEEditorProps> = ({
         autosave_interval: '30s',
         autosave_prefix: 'tinymce-autosave-{path}-{id}-',
         autosave_restore_when_empty: true,
-        // 菜单配置
+        // 菜单配置 - 移除 image media 项，统一使用批量上传
         menu: {
-          insert: { title: '插入', items: 'image media emoticons | link | insertdatetime' },
+          insert: { title: '插入', items: 'emoticons | link | insertdatetime' },
           format: { title: '格式', items: 'bold italic underline strikethrough superscript subscript | formats | removeformat' },
           tools: { title: '工具', items: 'code wordcount' },
           view: { title: '查看', items: 'visualaid visualblocks visualchars | preview fullscreen' },

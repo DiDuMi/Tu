@@ -94,7 +94,7 @@ export default function UserDropdown({ user }: UserDropdownProps) {
             </Link>
 
             <Link
-              href="/dashboard/profile"
+              href="/dashboard"
               className="block px-4 py-2 text-sm text-gray-700 dark:text-dark-text hover:bg-gray-100 dark:hover:bg-dark-border"
               onClick={() => setIsOpen(false)}
             >
@@ -102,7 +102,7 @@ export default function UserDropdown({ user }: UserDropdownProps) {
                 <svg className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                 </svg>
-                个人资料
+                个人中心
               </div>
             </Link>
 

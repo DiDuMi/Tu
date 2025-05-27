@@ -37,7 +37,13 @@ const createPageSchema = z.object({
   excerpt: z.string().optional(),
   coverImage: z.string().optional().nullable(),
   status: z.enum(['DRAFT', 'REVIEW', 'PUBLISHED', 'REJECTED', 'ARCHIVED']).default('DRAFT'),
-  categoryId: z.number().optional().nullable(),
+  categoryId: z.union([z.number(), z.string(), z.null()]).optional().transform(val => {
+    if (val === null || val === undefined || val === '' || val === 'null') {
+      return null
+    }
+    const num = typeof val === 'string' ? parseInt(val, 10) : val
+    return isNaN(num) ? null : num
+  }),
   tagIds: z.array(z.number()).optional(),
   featured: z.boolean().default(false),
   scheduledPublishAt: z.string().optional().nullable(),
@@ -305,8 +311,6 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
           skip: (page - 1) * limit,
           take: limit,
           orderBy,
-          // 添加缓存提示
-          ...(process.env.NODE_ENV === 'production' ? { cacheStrategy: { ttl: 30 } } : {}),
         }),
 
         // 查询总数
@@ -410,7 +414,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       } = validationResult.data
 
       // 从标题中提取标签
-      const { displayTitle, originalTitle, tags: extractedTags } = extractTagsFromTitle(title)
+      const { originalTitle, tags: extractedTags } = extractTagsFromTitle(title)
 
       // 处理发布时间
       let publishedAt = null
@@ -441,7 +445,51 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       }
 
       // 创建内容
-      console.log(`创建内容，状态: ${status}`)
+      const userId = parseInt(session.user.id, 10)
+      console.log(`创建内容，状态: ${status}, 用户ID: ${userId}, 分类ID: ${categoryId}`)
+
+      // 验证用户是否存在且未被删除
+      const userExists = await prisma.user.findFirst({
+        where: {
+          id: userId,
+          deletedAt: null
+        },
+        select: { id: true, status: true }
+      })
+
+      if (!userExists) {
+        console.error(`用户不存在: ${userId}`)
+        console.error(`Session用户ID: ${userId}, Session邮箱: ${session.user.email}`)
+
+        // 尝试通过邮箱查找用户
+        const userByEmail = await prisma.user.findUnique({
+          where: {
+            email: session.user.email!,
+            deletedAt: null
+          },
+          select: { id: true, status: true }
+        })
+
+        if (userByEmail) {
+          console.log(`通过邮箱找到用户，实际ID: ${userByEmail.id}`)
+          return errorResponse(
+            res,
+            'SESSION_USER_MISMATCH',
+            '用户会话信息不匹配，请重新登录',
+            { actualUserId: userByEmail.id, sessionUserId: userId },
+            401
+          )
+        }
+
+        return errorResponse(
+          res,
+          'USER_NOT_FOUND',
+          '用户不存在，请重新登录',
+          undefined,
+          404
+        )
+      }
+
       const page = await prisma.page.create({
         data: {
           title: originalTitle,
@@ -454,7 +502,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
           publishedAt,
           scheduledPublishAt: scheduledPublishAt ? new Date(scheduledPublishAt) : null,
           scheduledArchiveAt: scheduledArchiveAt ? new Date(scheduledArchiveAt) : null,
-          userId: parseInt(session.user.id, 10),
+          userId,
           categoryId,
         },
       })

@@ -4,7 +4,7 @@ import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/pages/api/auth/[...nextauth]'
 import { signIn } from 'next-auth/react'
 import Head from 'next/head'
-import DashboardLayout from '@/components/layout/DashboardLayout'
+import NewHomeSidebarLayout from '@/components/layout/NewHomeSidebarLayout'
 import { Button } from '@/components/ui/Button'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card'
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/Alert'
@@ -122,12 +122,10 @@ export default function Settings() {
   const socialAccounts = socialAccountsData?.success ? socialAccountsData.data : []
 
   return (
-    <>
-      <Head>
-        <title>账号设置 - 兔图</title>
-        <meta name="description" content="管理您的账号设置和社交账号关联" />
-      </Head>
-      <DashboardLayout>
+    <NewHomeSidebarLayout
+      title="账号设置 - 兔图"
+      description="管理您的账号设置和社交账号关联"
+    >
         <div className="max-w-4xl mx-auto">
           <div className="mb-8">
             <h1 className="text-2xl font-bold text-gray-900">账号设置</h1>
@@ -378,8 +376,7 @@ export default function Settings() {
             </Button>
           </ModalFooter>
         </Modal>
-      </DashboardLayout>
-    </>
+    </NewHomeSidebarLayout>
   )
 }
 

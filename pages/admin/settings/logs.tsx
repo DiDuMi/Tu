@@ -1,19 +1,18 @@
+
 import { GetServerSideProps } from 'next'
 import { getServerSession } from 'next-auth/next'
 import { useState, useEffect } from 'react'
 
+
+import LogDetailModal from '@/components/admin/LogDetailModal'
+import LogExportActions from '@/components/admin/LogExportActions'
+import LogFilters from '@/components/admin/LogFilters'
+import LogList from '@/components/admin/LogList'
 import AdminLayout from '@/components/layout/AdminLayout'
 import { Alert } from '@/components/ui/Alert'
-import { Badge } from '@/components/ui/Badge'
-import { Button } from '@/components/ui/Button'
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card'
-import { Input } from '@/components/ui/Input'
-import { Modal } from '@/components/ui/Modal'
-import { Pagination } from '@/components/ui/Pagination'
-import { Select } from '@/components/ui/Select'
 import { isAdmin } from '@/lib/permissions'
 import { authOptions } from '@/pages/api/auth/[...nextauth]'
-import { useSystemStore, SystemLogLevel } from '@/stores/systemStore'
+import { useSystemStore } from '@/stores/systemStore'
 
 export default function LogsPage() {
   const [mounted, setMounted] = useState(false)
@@ -99,27 +98,7 @@ export default function LogsPage() {
     setShowDetailsModal(true)
   }
 
-  // 获取日志级别样式
-  const getLevelBadgeVariant = (level: SystemLogLevel) => {
-    switch (level) {
-      case 'INFO':
-        return 'default'
-      case 'WARNING':
-        return 'warning'
-      case 'ERROR':
-        return 'destructive'
-      case 'CRITICAL':
-        return 'destructive'
-      default:
-        return 'default'
-    }
-  }
-
-  // 格式化日期
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString)
-    return date.toLocaleString('zh-CN')
-  }
+  // 格式化和样式函数已移至组件中
 
   if (!mounted) return null
 
@@ -138,255 +117,33 @@ export default function LogsPage() {
         </Alert>
       )}
 
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle>日志筛选</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                日志级别
-              </label>
-              <Select
-                value={filters.level}
-                onChange={(e) => handleFilterChange('level', e.target.value)}
-              >
-                <option value="">全部级别</option>
-                <option value="INFO">信息</option>
-                <option value="WARNING">警告</option>
-                <option value="ERROR">错误</option>
-                <option value="CRITICAL">严重错误</option>
-              </Select>
-            </div>
+      <LogFilters
+        filters={filters}
+        onFilterChange={handleFilterChange}
+        onApplyFilters={handleApplyFilters}
+        onResetFilters={handleResetFilters}
+        onClearLogs={() => setShowClearModal(true)}
+      />
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                模块
-              </label>
-              <Input
-                type="text"
-                value={filters.module}
-                onChange={(e) => handleFilterChange('module', e.target.value)}
-                placeholder="输入模块名称"
-              />
-            </div>
+      <LogList
+        logs={logs}
+        isLoading={isLoadingLogs}
+        pagination={logsPagination}
+        onViewDetails={handleViewDetails}
+        onPageChange={handlePageChange}
+      />
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                操作类型
-              </label>
-              <Input
-                type="text"
-                value={filters.action}
-                onChange={(e) => handleFilterChange('action', e.target.value)}
-                placeholder="输入操作类型"
-              />
-            </div>
+      <LogExportActions
+        showClearModal={showClearModal}
+        onCloseClearModal={() => setShowClearModal(false)}
+        onConfirmClear={handleClearLogs}
+      />
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                开始日期
-              </label>
-              <Input
-                type="date"
-                value={filters.startDate}
-                onChange={(e) => handleFilterChange('startDate', e.target.value)}
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                结束日期
-              </label>
-              <Input
-                type="date"
-                value={filters.endDate}
-                onChange={(e) => handleFilterChange('endDate', e.target.value)}
-              />
-            </div>
-          </div>
-
-          <div className="flex justify-between">
-            <div className="flex space-x-2">
-              <Button onClick={handleApplyFilters}>应用筛选</Button>
-              <Button variant="outline" onClick={handleResetFilters}>重置</Button>
-            </div>
-
-            <Button
-              variant="destructive"
-              onClick={() => setShowClearModal(true)}
-            >
-              清除日志
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>日志列表</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {isLoadingLogs ? (
-            <div className="text-center py-8">
-              <p>加载中...</p>
-            </div>
-          ) : (
-            <>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm text-left text-gray-500">
-                  <thead className="text-xs text-gray-700 uppercase bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3">ID</th>
-                      <th className="px-6 py-3">级别</th>
-                      <th className="px-6 py-3">模块</th>
-                      <th className="px-6 py-3">操作</th>
-                      <th className="px-6 py-3">消息</th>
-                      <th className="px-6 py-3">时间</th>
-                      <th className="px-6 py-3">操作</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {logs.length === 0 ? (
-                      <tr>
-                        <td colSpan={7} className="px-6 py-4 text-center">
-                          没有找到日志记录
-                        </td>
-                      </tr>
-                    ) : (
-                      logs.map((log) => (
-                        <tr key={log.id} className="bg-white border-b">
-                          <td className="px-6 py-4">{log.id}</td>
-                          <td className="px-6 py-4">
-                            <Badge variant={getLevelBadgeVariant(log.level)}>
-                              {log.level}
-                            </Badge>
-                          </td>
-                          <td className="px-6 py-4">{log.module}</td>
-                          <td className="px-6 py-4">{log.action}</td>
-                          <td className="px-6 py-4 max-w-xs truncate">
-                            {log.message}
-                          </td>
-                          <td className="px-6 py-4">
-                            {formatDate(log.createdAt)}
-                          </td>
-                          <td className="px-6 py-4">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleViewDetails(log)}
-                            >
-                              详情
-                            </Button>
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
-
-              {logsPagination.total > 0 && (
-                <div className="mt-4 flex justify-center">
-                  <Pagination
-                    currentPage={logsPagination.page}
-                    totalPages={logsPagination.totalPages}
-                    onPageChange={handlePageChange}
-                  />
-                </div>
-              )}
-            </>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* 清除日志确认弹窗 */}
-      <Modal
-        isOpen={showClearModal}
-        onClose={() => setShowClearModal(false)}
-        title="确认清除日志"
-      >
-        <div className="p-6">
-          <p className="mb-4">确定要清除符合当前筛选条件的日志吗？此操作不可撤销。</p>
-          <div className="flex justify-end space-x-2">
-            <Button variant="outline" onClick={() => setShowClearModal(false)}>
-              取消
-            </Button>
-            <Button variant="destructive" onClick={handleClearLogs}>
-              确认清除
-            </Button>
-          </div>
-        </div>
-      </Modal>
-
-      {/* 日志详情弹窗 */}
-      <Modal
+      <LogDetailModal
         isOpen={showDetailsModal}
+        log={selectedLog}
         onClose={() => setShowDetailsModal(false)}
-        title="日志详情"
-      >
-        {selectedLog && (
-          <div className="p-6">
-            <div className="grid grid-cols-2 gap-4 mb-4">
-              <div>
-                <p className="text-sm font-medium text-gray-500">ID</p>
-                <p>{selectedLog.id}</p>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-500">级别</p>
-                <Badge variant={getLevelBadgeVariant(selectedLog.level)}>
-                  {selectedLog.level}
-                </Badge>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-500">模块</p>
-                <p>{selectedLog.module}</p>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-500">操作</p>
-                <p>{selectedLog.action}</p>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-500">时间</p>
-                <p>{formatDate(selectedLog.createdAt)}</p>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-500">用户ID</p>
-                <p>{selectedLog.userId || '无'}</p>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-500">IP地址</p>
-                <p>{selectedLog.ipAddress || '无'}</p>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-500">用户代理</p>
-                <p className="truncate">{selectedLog.userAgent || '无'}</p>
-              </div>
-            </div>
-
-            <div className="mb-4">
-              <p className="text-sm font-medium text-gray-500">消息</p>
-              <p className="mt-1 p-2 bg-gray-50 rounded">{selectedLog.message}</p>
-            </div>
-
-            {selectedLog.details && (
-              <div>
-                <p className="text-sm font-medium text-gray-500">详细信息</p>
-                <pre className="mt-1 p-2 bg-gray-50 rounded overflow-auto max-h-40">
-                  {selectedLog.details}
-                </pre>
-              </div>
-            )}
-
-            <div className="flex justify-end mt-4">
-              <Button onClick={() => setShowDetailsModal(false)}>
-                关闭
-              </Button>
-            </div>
-          </div>
-        )}
-      </Modal>
+      />
     </AdminLayout>
   )
 }

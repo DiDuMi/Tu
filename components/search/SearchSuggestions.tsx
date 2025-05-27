@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/router'
-import { cn } from '@/lib/utils'
+import React, { useState, useEffect, useRef } from 'react'
+
 import { useSearchHistory } from '@/hooks/useSearchHistory'
+import { cn } from '@/lib/utils'
 
 interface SearchSuggestionsProps {
   query: string
@@ -25,7 +26,7 @@ export function SearchSuggestions({
   onClose,
   className,
 }: SearchSuggestionsProps) {
-  const router = useRouter()
+  const _router = useRouter()
   const [suggestions, setSuggestions] = useState<Suggestion[]>([])
   const [selectedIndex, setSelectedIndex] = useState(-1)
   const { searchHistory, addToHistory, removeFromHistory, clearHistory } = useSearchHistory()
@@ -100,7 +101,7 @@ export function SearchSuggestions({
       setSuggestions([...filteredHistory, ...filteredSuggestions, ...filteredTags])
     }
     setSelectedIndex(-1)
-  }, [query, searchHistory])
+  }, [query, searchHistory, popularTags, searchSuggestions])
 
   const handleSelect = (suggestion: Suggestion) => {
     addToHistory(suggestion.text)
@@ -136,7 +137,7 @@ export function SearchSuggestions({
   useEffect(() => {
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [isVisible, selectedIndex, suggestions])
+  }, [isVisible, selectedIndex, suggestions, handleKeyDown])
 
   const getSuggestionIcon = (type: string) => {
     switch (type) {

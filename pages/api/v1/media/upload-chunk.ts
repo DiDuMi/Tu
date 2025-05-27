@@ -94,32 +94,32 @@ export default withErrorHandler(
           const fileName = file.originalFilename || `file-${Date.now()}`
           const fileExt = path.extname(fileName)
           const mergedFileName = `${path.basename(fileName, fileExt)}-${Date.now()}${fileExt}`
-          
+
           // 获取媒体存储路径
           const { getMediaStoragePath, getMediaType, processImage, processVideo, processAudio, getMediaUrl } = require('@/lib/media')
           const storagePath = getMediaStoragePath(mergedFileName)
-          
+
           // 确保输出目录存在
           const outputDir = path.dirname(storagePath)
           await fs.mkdir(outputDir, { recursive: true })
-          
+
           // 创建写入流
-          const writeStream = fs.createWriteStream(storagePath)
-          
+          const writeStream = require('fs').createWriteStream(storagePath)
+
           // 按顺序读取并写入所有分块
           for (let i = 0; i < totalChunks; i++) {
             const chunkData = await fs.readFile(path.join(userChunksDir, `${i}`))
             await writeStream.write(chunkData)
           }
-          
+
           await writeStream.close()
-          
+
           // 处理媒体文件
           const mediaType = getMediaType(file.mimetype)
-          
+
           // 处理媒体文件（图片、视频、音频）
           let width, height, duration, thumbnailUrl, processedSize
-          
+
           if (mediaType === 'IMAGE') {
             // 处理图片
             const result = await processImage(storagePath, storagePath, {
@@ -128,15 +128,15 @@ export default withErrorHandler(
               quality: 80,
               format: 'webp',
             })
-            
+
             if (!result.success) {
               throw new Error(result.error || '图片处理失败')
             }
-            
+
             width = result.width
             height = result.height
             processedSize = result.size
-            
+
             // 生成缩略图
             const thumbPath = storagePath.replace(/\.[^.]+$/, '_thumb.webp')
             const thumbResult = await generateThumbnail(storagePath, thumbPath, {
@@ -145,7 +145,7 @@ export default withErrorHandler(
               quality: 70,
               fit: 'cover'
             })
-            
+
             if (thumbResult.success) {
               thumbnailUrl = getMediaUrl(thumbPath)
             }
@@ -161,16 +161,16 @@ export default withErrorHandler(
               codec: 'h264',
               fastStart: true,
             })
-            
+
             if (!result.success) {
               throw new Error(result.error || '视频处理失败')
             }
-            
+
             width = result.width
             height = result.height
             duration = result.duration
             processedSize = result.size
-            
+
             if (result.thumbnailPath) {
               thumbnailUrl = getMediaUrl(result.thumbnailPath)
             }
@@ -181,14 +181,14 @@ export default withErrorHandler(
               format: 'mp3',
               normalize: true,
             })
-            
+
             if (!result.success) {
               throw new Error(result.error || '音频处理失败')
             }
-            
+
             duration = result.duration
             processedSize = result.size
-            
+
             // 为音频生成一个默认的缩略图
             const defaultAudioThumbPath = path.join('public', 'images', 'audio-thumbnail.webp')
             if (await fs.stat(defaultAudioThumbPath).catch(() => null)) {
@@ -201,16 +201,16 @@ export default withErrorHandler(
             const stats = await fs.stat(storagePath)
             processedSize = stats.size
           }
-          
+
           // 获取URL路径
           const url = getMediaUrl(storagePath)
-          
+
           // 从最后一个分块获取元数据
           const title = fields.title?.[0] || fileName
           const description = fields.description?.[0] || null
           const categoryId = fields.categoryId?.[0] ? parseInt(fields.categoryId[0]) : null
           const tagIds = fields['tags[]'] || []
-          
+
           // 创建媒体记录
           media = await prisma.media.create({
             data: {
@@ -247,10 +247,10 @@ export default withErrorHandler(
               }
             }
           })
-          
+
           // 清理临时文件
           await fs.rm(userChunksDir, { recursive: true, force: true })
-          
+
           complete = true
         } catch (error) {
           console.error('合并文件失败:', error)
@@ -289,7 +289,7 @@ export default withErrorHandler(
 // 格式化媒体响应
 function formatMediaResponse(media: any) {
   if (!media) return null
-  
+
   return {
     id: media.id,
     uuid: media.uuid,

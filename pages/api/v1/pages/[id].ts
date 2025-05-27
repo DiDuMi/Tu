@@ -16,7 +16,13 @@ const updatePageSchema = z.object({
   contentBlocks: z.string().optional(),
   excerpt: z.string().optional(),
   status: z.enum(['DRAFT', 'REVIEW', 'PUBLISHED', 'REJECTED', 'ARCHIVED']).optional(),
-  categoryId: z.number().optional().nullable(),
+  categoryId: z.union([z.number(), z.string(), z.null()]).optional().transform(val => {
+    if (val === null || val === undefined || val === '' || val === 'null') {
+      return null
+    }
+    const num = typeof val === 'string' ? parseInt(val, 10) : val
+    return isNaN(num) ? null : num
+  }),
   tagIds: z.array(z.number()).optional(),
   featured: z.boolean().optional(),
   scheduledPublishAt: z.string().optional().nullable(),
@@ -192,6 +198,49 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
           }
         } catch (error) {
           console.error('从数据库获取用户组信息失败:', error)
+        }
+      } else {
+        // 未登录用户（游客）- 获取游客权限设置
+        try {
+          const guestPermissionsSetting = await prisma.systemSetting.findUnique({
+            where: { key: 'guest_permissions' }
+          })
+
+          if (guestPermissionsSetting) {
+            const guestPermissions = JSON.parse(guestPermissionsSetting.value)
+            // 构造一个虚拟的用户组对象，包含游客权限设置
+            userGroup = {
+              id: 0,
+              name: '游客',
+              previewPercentage: guestPermissions.previewPercentage || 0,
+              permissions: JSON.stringify({
+                video: guestPermissions.canPlayVideo ? ['play'] : []
+              })
+            }
+          } else {
+            // 如果没有设置，使用默认游客权限
+            const { GUEST_PERMISSIONS } = await import('@/lib/homepage-permissions')
+            userGroup = {
+              id: 0,
+              name: '游客',
+              previewPercentage: GUEST_PERMISSIONS.previewPercentage,
+              permissions: JSON.stringify({
+                video: GUEST_PERMISSIONS.canPlayVideo ? ['play'] : []
+              })
+            }
+          }
+        } catch (error) {
+          console.error('获取游客权限设置失败:', error)
+          // 使用默认游客权限作为后备
+          const { GUEST_PERMISSIONS } = await import('@/lib/homepage-permissions')
+          userGroup = {
+            id: 0,
+            name: '游客',
+            previewPercentage: GUEST_PERMISSIONS.previewPercentage,
+            permissions: JSON.stringify({
+              video: GUEST_PERMISSIONS.canPlayVideo ? ['play'] : []
+            })
+          }
         }
       }
 

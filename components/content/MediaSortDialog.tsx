@@ -101,6 +101,16 @@ const SortableMediaItem: React.FC<SortableMediaItemProps> = ({ media, onDelete, 
             className="max-w-full max-h-full object-contain"
             draggable={false}
           />
+        ) : media.type === 'video' ? (
+          <div className="text-center text-gray-500">
+            <div className="text-2xl mb-1">🎬</div>
+            <div className="text-xs font-medium">VIDEO</div>
+          </div>
+        ) : media.type === 'audio' ? (
+          <div className="text-center text-gray-500">
+            <div className="text-2xl mb-1">🎵</div>
+            <div className="text-xs font-medium">AUDIO</div>
+          </div>
         ) : (
           <div className="text-center text-gray-500">
             <div className="text-xs font-medium">{media.type.toUpperCase()}</div>
@@ -158,6 +168,16 @@ const MediaSortDialog: React.FC<MediaSortDialogProps> = ({
         preview = (el as HTMLImageElement).src
         type = 'image'
         title = (el as HTMLImageElement).alt || '图片'
+      } else if (el.nodeName === 'VIDEO') {
+        const videoEl = el as HTMLVideoElement
+        preview = videoEl.poster || videoEl.src || (videoEl.querySelector('source')?.src) || ''
+        type = 'video'
+        title = videoEl.title || '本地视频'
+      } else if (el.nodeName === 'AUDIO') {
+        const audioEl = el as HTMLAudioElement
+        preview = audioEl.src || (audioEl.querySelector('source')?.src) || ''
+        type = 'audio'
+        title = audioEl.title || '本地音频'
       } else if (el.nodeName === 'IFRAME') {
         preview = (el as HTMLIFrameElement).src
         type = 'video'
@@ -225,8 +245,13 @@ const MediaSortDialog: React.FC<MediaSortDialogProps> = ({
 
   // 应用排序
   const handleApply = () => {
-    const sortedElements = mediaItems.map(item => item.element)
-    onApply(sortedElements)
+    // 传递元素的HTML字符串而不是DOM引用，避免引用问题
+    const sortedElementsData = mediaItems.map(item => ({
+      html: item.element.outerHTML,
+      tagName: item.element.tagName,
+      type: item.type
+    }))
+    onApply(sortedElementsData)
   }
 
   // 预览媒体
@@ -345,6 +370,16 @@ const MediaSortDialog: React.FC<MediaSortDialogProps> = ({
                               alt={media.title}
                               className="max-w-full max-h-full object-contain"
                             />
+                          ) : media.type === 'video' ? (
+                            <div className="text-center text-gray-500">
+                              <div className="text-lg">🎬</div>
+                              <div className="text-xs">VIDEO</div>
+                            </div>
+                          ) : media.type === 'audio' ? (
+                            <div className="text-center text-gray-500">
+                              <div className="text-lg">🎵</div>
+                              <div className="text-xs">AUDIO</div>
+                            </div>
                           ) : (
                             <div className="text-center text-gray-500">
                               <div className="text-xs">{media.type.toUpperCase()}</div>
@@ -376,6 +411,16 @@ const MediaSortDialog: React.FC<MediaSortDialogProps> = ({
                               alt={media.title}
                               className="max-w-full max-h-full object-contain"
                             />
+                          ) : media.type === 'video' ? (
+                            <div className="text-center text-gray-500">
+                              <div className="text-lg">🎬</div>
+                              <div className="text-xs">VIDEO</div>
+                            </div>
+                          ) : media.type === 'audio' ? (
+                            <div className="text-center text-gray-500">
+                              <div className="text-lg">🎵</div>
+                              <div className="text-xs">AUDIO</div>
+                            </div>
                           ) : (
                             <div className="text-center text-gray-500">
                               <div className="text-xs">{media.type.toUpperCase()}</div>
@@ -410,6 +455,16 @@ const MediaSortDialog: React.FC<MediaSortDialogProps> = ({
                               alt={media.title}
                               className="max-w-full max-h-full object-contain"
                             />
+                          ) : media.type === 'video' ? (
+                            <div className="text-center text-gray-500">
+                              <div className="text-lg">🎬</div>
+                              <div className="text-xs">VIDEO</div>
+                            </div>
+                          ) : media.type === 'audio' ? (
+                            <div className="text-center text-gray-500">
+                              <div className="text-lg">🎵</div>
+                              <div className="text-xs">AUDIO</div>
+                            </div>
                           ) : (
                             <div className="text-center text-gray-500">
                               <div className="text-xs">{media.type.toUpperCase()}</div>
@@ -484,6 +539,18 @@ const MediaSortDialog: React.FC<MediaSortDialogProps> = ({
                   alt={previewMedia.title}
                   className="max-w-full max-h-full object-contain"
                 />
+              ) : previewMedia.type === 'video' ? (
+                <div className="text-center text-gray-500 p-8">
+                  <div className="text-6xl mb-4">🎬</div>
+                  <div className="text-lg font-medium">视频文件</div>
+                  <div className="text-sm mt-2 text-gray-400">{previewMedia.preview}</div>
+                </div>
+              ) : previewMedia.type === 'audio' ? (
+                <div className="text-center text-gray-500 p-8">
+                  <div className="text-6xl mb-4">🎵</div>
+                  <div className="text-lg font-medium">音频文件</div>
+                  <div className="text-sm mt-2 text-gray-400">{previewMedia.preview}</div>
+                </div>
               ) : (
                 <div className="text-center text-gray-500 p-8">
                   <div className="text-lg">{previewMedia.type.toUpperCase()}</div>

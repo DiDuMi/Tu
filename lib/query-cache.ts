@@ -40,27 +40,9 @@ export function applyQueryCacheMiddleware(prisma: PrismaClient): PrismaClient {
   const cachableModels: string[] = []
   // const cachableModels = ['Category', 'Tag', 'MediaCategory', 'MediaTag', 'UserGroup']
 
-  // 查询缓存中间件
-  prisma.$use(async (params, next) => {
-    // 只缓存特定模型的特定操作
-    if (params.model && params.action && cachableModels.includes(params.model) && cachableActions.includes(params.action)) {
-      const cacheKey = generateCacheKey(params.model, params.action, params.args)
-
-      // 尝试从缓存获取结果
-      const cachedResult = queryCache.get(cacheKey)
-      if (cachedResult !== undefined) {
-        return cachedResult
-      }
-
-      // 如果缓存未命中，执行查询并缓存结果
-      const result = await next(params)
-      queryCache.set(cacheKey, result)
-      return result
-    }
-
-    // 对于不可缓存的查询，直接执行
-    return next(params)
-  })
+  // 使用 Prisma 5+ 的扩展 API 替代已弃用的 $use 方法
+  // 由于缓存功能暂时禁用（cachableModels 为空数组），直接返回 prisma 实例
+  // 如需启用缓存，请使用 Prisma 扩展 API 重新实现
 
   return prisma
 }

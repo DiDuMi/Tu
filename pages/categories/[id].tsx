@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/Button'
 import { Alert } from '@/components/ui/Alert'
 import { Pagination } from '@/components/ui/Pagination'
 import { fetcher } from '@/lib/api'
-import MainLayout from '@/components/layout/MainLayout'
+import NewHomeSidebarLayout from '@/components/layout/NewHomeSidebarLayout'
 import ContentCard from '@/components/content/ContentCard'
 import PublicContentFilter from '@/components/content/PublicContentFilter'
 
@@ -22,7 +22,6 @@ export default function CategoryPage({ initialCategory, initialContents }: Categ
   const { id } = router.query
 
   const [currentPage, setCurrentPage] = useState(1)
-  const [pageSize, setPageSize] = useState(12)
   const [filters, setFilters] = useState({
     category: id as string,
     tag: '',
@@ -41,7 +40,7 @@ export default function CategoryPage({ initialCategory, initialContents }: Categ
   // 构建查询参数
   const queryParams = new URLSearchParams({
     page: currentPage.toString(),
-    limit: pageSize.toString(),
+    limit: '12',
     ...filters,
   })
 
@@ -72,7 +71,7 @@ export default function CategoryPage({ initialCategory, initialContents }: Categ
   // 计算分页信息
   const pagination = contentsData?.pagination || {
     page: 1,
-    limit: pageSize,
+    limit: 12,
     total: 0,
     totalPages: 0,
   }
@@ -80,7 +79,7 @@ export default function CategoryPage({ initialCategory, initialContents }: Categ
   // 如果分类不存在，显示错误页面
   if (categoryError || !category) {
     return (
-      <MainLayout>
+      <NewHomeSidebarLayout>
         <div className="container mx-auto px-4 py-8">
           <Alert variant="destructive" className="mb-4">
             分类不存在或已被删除
@@ -89,12 +88,12 @@ export default function CategoryPage({ initialCategory, initialContents }: Categ
             <Button onClick={() => router.push('/')}>返回首页</Button>
           </div>
         </div>
-      </MainLayout>
+      </NewHomeSidebarLayout>
     )
   }
 
   return (
-    <MainLayout>
+    <NewHomeSidebarLayout>
       <Head>
         <title>{category.name} - 兔图</title>
         <meta name="description" content={`浏览${category.name}分类下的所有内容 - 兔图内容管理平台`} />
@@ -140,13 +139,13 @@ export default function CategoryPage({ initialCategory, initialContents }: Categ
               重新加载
             </Button>
           </div>
-        ) : contentsData?.data?.length === 0 ? (
+        ) : !contentsData?.data?.items || contentsData.data.items.length === 0 ? (
           <div className="text-center py-20">
             <p className="text-gray-500">该分类下暂无内容</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mt-8">
-            {contentsData?.data?.map((content: any) => (
+            {contentsData.data.items.map((content: any) => (
               <ContentCard key={content.id} content={content} />
             ))}
           </div>
@@ -163,7 +162,7 @@ export default function CategoryPage({ initialCategory, initialContents }: Categ
           </div>
         )}
       </div>
-    </MainLayout>
+    </NewHomeSidebarLayout>
   )
 }
 
@@ -171,8 +170,11 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
   const { id } = context.params as { id: string }
 
   try {
-    // 在服务器端获取分类信息
-    const categoryResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/v1/categories/${id}`)
+    // 构建完整的API URL
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || `http://localhost:${process.env.PORT || 3000}`
+
+    // 在服务器端获取分类信息 - 现在支持 UUID 和 slug
+    const categoryResponse = await fetch(`${baseUrl}/api/v1/categories/${id}`)
 
     if (!categoryResponse.ok) {
       return {
@@ -181,10 +183,11 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     }
 
     const categoryData = await categoryResponse.json()
+    const category = categoryData.data
 
-    // 获取该分类下的内容列表
+    // 获取该分类下的内容列表 - 使用分类的实际 UUID
     const contentsResponse = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL || ''}/api/v1/pages?category=${id}&page=1&limit=12&sort=newest`
+      `${baseUrl}/api/v1/pages?category=${category.uuid}&page=1&limit=12&sort=newest`
     )
     const contentsData = await contentsResponse.json()
 

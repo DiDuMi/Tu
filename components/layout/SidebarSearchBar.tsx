@@ -1,5 +1,6 @@
-import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/router'
+import { useState, useRef, useEffect } from 'react'
+
 import { SearchSuggestions } from '@/components/search/SearchSuggestions'
 
 interface SidebarSearchBarProps {

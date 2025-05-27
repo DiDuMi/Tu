@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react'
 import useSWR from 'swr'
+
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
 import { Card, CardContent } from '@/components/ui/Card'
+
 import { fetcher } from '@/lib/api'
+
 import TemplateEditor from './TemplateEditor'
 import TemplateList from './TemplateList'
 import SortableTemplateList from './SortableTemplateList'

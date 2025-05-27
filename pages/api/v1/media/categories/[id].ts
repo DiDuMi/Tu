@@ -3,7 +3,28 @@ import { getServerSession } from 'next-auth/next'
 import { z } from 'zod'
 import { authOptions } from '@/pages/api/auth/[...nextauth]'
 import { prisma } from '@/lib/prisma'
-import { ApiResponse } from '@/types/api'
+import { ApiResponse, MediaCategoryResponse } from '@/types/api'
+
+// 辅助函数：创建错误响应
+function createErrorResponse(code: string, message: string, details?: any): ApiResponse<any> {
+  return {
+    success: false,
+    error: {
+      code,
+      message,
+      details
+    }
+  }
+}
+
+// 辅助函数：创建成功响应
+function createSuccessResponse<T>(data: T, message?: string): ApiResponse<T> {
+  return {
+    success: true,
+    data,
+    message
+  }
+}
 
 // 验证更新分类的请求体
 const updateCategorySchema = z.object({
@@ -15,17 +36,14 @@ const updateCategorySchema = z.object({
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse<ApiResponse>
+  res: NextApiResponse<ApiResponse<MediaCategoryResponse>>
 ) {
   // 获取会话信息
   const session = await getServerSession(req, res, authOptions)
 
   // 检查用户是否已登录
   if (!session) {
-    return res.status(401).json({
-      success: false,
-      message: '未授权访问',
-    })
+    return res.status(401).json(createErrorResponse('UNAUTHORIZED', '未授权访问'))
   }
 
   // 检查用户权限
@@ -66,7 +84,7 @@ export default async function handler(
  */
 async function getCategory(
   req: NextApiRequest,
-  res: NextApiResponse<ApiResponse>,
+  res: NextApiResponse<ApiResponse<MediaCategoryResponse>>,
   id: string
 ) {
   try {
@@ -104,7 +122,7 @@ async function getCategory(
  */
 async function updateCategory(
   req: NextApiRequest,
-  res: NextApiResponse<ApiResponse>,
+  res: NextApiResponse<ApiResponse<MediaCategoryResponse>>,
   id: string
 ) {
   try {
@@ -215,7 +233,7 @@ async function updateCategory(
  */
 async function deleteCategory(
   req: NextApiRequest,
-  res: NextApiResponse<ApiResponse>,
+  res: NextApiResponse<ApiResponse<{ message: string }>>,
   id: string
 ) {
   try {

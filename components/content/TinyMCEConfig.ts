@@ -9,11 +9,11 @@ export const tinyMCEPlugins = [
   'insertdatetime', 'media', 'table', 'code', 'help', 'wordcount', 'emoticons'
 ]
 
-// 工具栏配置
+// 工具栏配置 - 移除内置的 image media 按钮，避免与批量上传冲突
 export const tinyMCEToolbar = 'undo redo | formatselect | ' +
   'bold italic backcolor | alignleft aligncenter ' +
   'alignright alignjustify | bullist numlist outdent indent | ' +
-  'removeformat | help | image media emoticons | batchupload mediasort'
+  'removeformat | help | emoticons'
 
 // 内容样式
 export const tinyMCEContentStyle = `
@@ -24,7 +24,7 @@ export const tinyMCEContentStyle = `
 `
 
 // 图片上传处理函数
-export const createImageUploadHandler = async (blobInfo: any, progress: any) => {
+export const createImageUploadHandler = async (blobInfo: any, _progress: any) => {
   try {
     const formData = new FormData()
     formData.append('file', blobInfo.blob(), blobInfo.filename())

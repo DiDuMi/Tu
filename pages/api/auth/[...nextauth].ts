@@ -6,7 +6,7 @@ import { PrismaAdapter } from '@next-auth/prisma-adapter'
 import { prisma } from '@/lib/prisma'
 import { compare } from 'bcrypt'
 import { User } from '@prisma/client'
-import TelegramProvider, { verifyTelegramAuth, processTelegramLoginData } from '@/lib/telegram-provider'
+import { verifyTelegramAuth, processTelegramLoginData } from '@/lib/telegram-provider'
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
@@ -57,7 +57,7 @@ export const authOptions: NextAuthOptions = {
           name: user.name,
           role: user.role,
           image: user.image,
-          userGroupId: user.userGroupId,
+          userGroupId: user.userGroupId || undefined,
         }
       }
     }),
@@ -73,7 +73,7 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async signIn({ user, account, profile }) {
       // 对于社交登录，检查用户状态
-      if (account?.provider !== 'credentials') {
+      if (account?.provider !== 'credentials' && account) {
         // 查找现有用户
         const existingUser = await prisma.user.findUnique({
           where: { email: user.email! },
@@ -137,7 +137,7 @@ export const authOptions: NextAuthOptions = {
           })
 
           if (currentUser) {
-            token.userGroupId = currentUser.userGroupId
+            token.userGroupId = currentUser.userGroupId || undefined
             token.role = currentUser.role
             token.lastUpdated = now
           }

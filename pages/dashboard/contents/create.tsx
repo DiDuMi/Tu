@@ -1,7 +1,18 @@
-import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { useSession } from 'next-auth/react';
+import { useState, useEffect } from 'react';
 import useSWR from 'swr';
+
+import AutoSaveIndicator from '@/components/content/AutoSaveIndicator';
+import BatchUploadButton from '@/components/content/BatchUploadButton';
+import ContentCreationProgress from '@/components/content/ContentCreationProgress';
+import CoverImageSelector from '@/components/content/CoverImageSelector';
+import EnhancedTagSelector from '@/components/content/EnhancedTagSelector';
+import KeyboardShortcuts from '@/components/content/KeyboardShortcuts';
+import MediaSortButton from '@/components/content/MediaSortButton';
+import EditorTemplateButton from '@/components/content/templates/EditorTemplateButton';
+import TinyMCEEditor from '@/components/content/TinyMCEEditor';
+import NewHomeSidebarLayout from '@/components/layout/NewHomeSidebarLayout';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
@@ -9,18 +20,11 @@ import { Label } from '@/components/ui/Label';
 import { Textarea } from '@/components/ui/Textarea';
 import { Select } from '@/components/ui/Select';
 import { fetcher } from '@/lib/api';
-import DashboardLayout from '@/components/layout/DashboardLayout';
-import TinyMCEEditor from '@/components/content/TinyMCEEditor';
-import CoverImageSelector from '@/components/content/CoverImageSelector';
-import EnhancedTagSelector from '@/components/content/EnhancedTagSelector';
-import ContentCreationProgress from '@/components/content/ContentCreationProgress';
-import AutoSaveIndicator from '@/components/content/AutoSaveIndicator';
-import KeyboardShortcuts from '@/components/content/KeyboardShortcuts';
-
-import EditorTemplateButton from '@/components/content/templates/EditorTemplateButton';
+import LinkTemplateModal from '@/components/editor/LinkTemplateModal';
 import { useAutoSave } from '@/hooks/useAutoSave';
 import { extractFirstImageFromContent } from '@/lib/cover-image-utils';
 import { useHomepagePermissions } from '@/hooks/useHomepagePermissions';
+import FloatingButtons from '@/components/ui/FloatingButtons';
 
 export default function CreateContent() {
   const router = useRouter();
@@ -40,9 +44,16 @@ export default function CreateContent() {
   // 封面图片状态
   const [coverImage, setCoverImage] = useState<string>('');
 
-  // 模板功能状态
-  const [templateRecommendationEnabled, setTemplateRecommendationEnabled] = useState(true);
+  // 编辑器引用
   const [editorRef, setEditorRef] = useState<any>(null);
+
+  // 链接模板状态
+  const [isLinkTemplateModalOpen, setIsLinkTemplateModalOpen] = useState(false);
+  const [currentPageId, setCurrentPageId] = useState<string | number | null>(null);
+
+  // 批量上传功能已集成到 TinyMCEEditor 组件中
+
+
 
   // 获取分类列表 - 添加缓存配置
   const { data: categoriesData, error: categoriesError } = useSWR(
@@ -62,7 +73,7 @@ export default function CreateContent() {
   );
 
   // 获取用户的草稿
-  const { data: draftData, error: draftError } = useSWR(
+  const { data: draftData } = useSWR(
     session ? '/api/v1/pages/draft' : null,
     fetcher,
     {
@@ -99,7 +110,7 @@ export default function CreateContent() {
     }
 
     try {
-      await fetch('/api/v1/pages/draft', {
+      const response = await fetch('/api/v1/pages/draft', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -114,6 +125,13 @@ export default function CreateContent() {
           status: 'DRAFT'
         }),
       });
+
+      if (response.ok) {
+        const responseData = await response.json();
+        if (responseData.success && responseData.data && !currentPageId) {
+          setCurrentPageId(responseData.data.id || responseData.data.uuid);
+        }
+      }
     } catch (error) {
       console.error('Auto save failed:', error);
       throw error;
@@ -142,6 +160,11 @@ export default function CreateContent() {
       setContent(draft.content || '');
       setExcerpt(draft.excerpt || '');
       setCoverImage(draft.coverImage || '');
+
+      // 设置草稿的页面ID
+      if (draft.id || draft.uuid) {
+        setCurrentPageId(draft.id || draft.uuid);
+      }
 
       if (draft.categoryId) {
         setCategoryId(draft.categoryId.toString());
@@ -197,31 +220,57 @@ export default function CreateContent() {
     setError(null);
 
     try {
-      const response = await fetch('/api/v1/pages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          title,
-          content,
-          excerpt: excerpt || undefined,
-          categoryId: parseInt(categoryId, 10),
-          status: publishMode,
-          tagIds: selectedTagIds.length > 0 ? selectedTagIds : undefined,
-          coverImage: coverImage || undefined,
-        }),
-      });
+      let response;
+
+      // 如果有currentPageId，说明已经有草稿，使用更新API
+      if (currentPageId) {
+        response = await fetch(`/api/v1/pages/${currentPageId}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            title,
+            content,
+            excerpt: excerpt || undefined,
+            categoryId: parseInt(categoryId, 10),
+            status: publishMode,
+            tagIds: selectedTagIds.length > 0 ? selectedTagIds : undefined,
+            coverImage: coverImage || undefined,
+          }),
+        });
+      } else {
+        // 如果没有currentPageId，使用创建API
+        response = await fetch('/api/v1/pages', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            title,
+            content,
+            excerpt: excerpt || undefined,
+            categoryId: parseInt(categoryId, 10),
+            status: publishMode,
+            tagIds: selectedTagIds.length > 0 ? selectedTagIds : undefined,
+            coverImage: coverImage || undefined,
+          }),
+        });
+      }
 
       if (response.ok) {
+        const responseData = await response.json();
+        if (responseData.success && responseData.data && !currentPageId) {
+          setCurrentPageId(responseData.data.id || responseData.data.uuid);
+        }
         router.push('/dashboard/contents');
       } else {
         const errorData = await response.json();
-        setError(errorData.message || '创建内容失败');
+        setError(errorData.message || '发布内容失败');
       }
     } catch (error) {
-      console.error('创建内容时出错:', error);
-      setError('创建内容时发生错误');
+      console.error('发布内容时出错:', error);
+      setError('发布内容时发生错误');
     } finally {
       setIsSubmitting(false);
     }
@@ -280,6 +329,12 @@ export default function CreateContent() {
     }
   };
 
+  // 批量上传功能已集成到 TinyMCEEditor 组件中，通过编辑器工具栏按钮触发
+
+
+
+
+
 
 
   if (isLoading) {
@@ -294,7 +349,7 @@ export default function CreateContent() {
   }
 
   return (
-    <DashboardLayout title="发布内容 - 兔图">
+    <NewHomeSidebarLayout title="发布内容 - 兔图">
       <div className="container mx-auto px-4 py-8">
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-gray-900">发布新内容</h1>
@@ -374,25 +429,34 @@ export default function CreateContent() {
 
                     {/* 编辑器工具栏 */}
                     <div className="flex items-center space-x-3">
+                      {/* 批量上传按钮 */}
+                      <BatchUploadButton />
+
+                      {/* 媒体排序按钮 */}
+                      <MediaSortButton
+                        editorRef={{ current: editorRef }}
+                      />
+
                       {/* 预设模板按钮 */}
                       <EditorTemplateButton
                         onInsertTemplate={handleInsertTemplate}
                         title={title}
+                        enableSmartRecommendation={true}
                       />
 
-                      {/* 模板推荐开关 */}
-                      <div className="flex items-center space-x-2">
-                        <input
-                          type="checkbox"
-                          id="templateRecommendation"
-                          checked={templateRecommendationEnabled}
-                          onChange={(e) => setTemplateRecommendationEnabled(e.target.checked)}
-                          className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-                        />
-                        <Label htmlFor="templateRecommendation" className="text-sm text-gray-600">
-                          智能推荐
-                        </Label>
-                      </div>
+                      {/* 链接模板按钮 */}
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setIsLinkTemplateModalOpen(true)}
+                        className="flex items-center gap-2"
+                        disabled={!currentPageId && (!title.trim() || !content.trim())}
+                        title={!currentPageId && (!title.trim() || !content.trim()) ? '请先输入标题和内容，系统将自动保存草稿后可管理下载链接' : '管理下载链接'}
+                      >
+                        <span>🔗</span>
+                        链接模板
+                      </Button>
                     </div>
                   </div>
 
@@ -603,7 +667,23 @@ export default function CreateContent() {
           onPublish={handlePublish}
           onCancel={handleCancel}
         />
+
+        {/* 链接模板模态框 */}
+        <LinkTemplateModal
+          isOpen={isLinkTemplateModalOpen}
+          onClose={() => setIsLinkTemplateModalOpen(false)}
+          pageId={currentPageId || 'temp'}
+          onLinksUpdated={() => {
+            // 可以在这里添加刷新逻辑
+            console.log('下载链接已更新');
+          }}
+        />
+
+        {/* 批量上传功能已集成到 TinyMCEEditor 组件中，无需重复的对话框 */}
+
+        {/* 悬浮按钮 */}
+        <FloatingButtons />
       </div>
-    </DashboardLayout>
+    </NewHomeSidebarLayout>
   );
 }

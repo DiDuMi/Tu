@@ -25,7 +25,7 @@ const createCategorySchema = z.object({
 })
 
 async function handler(req: NextApiRequest, res: NextApiResponse) {
-  // GET 请求 - 获取分类列表
+  // GET 请求 - 获取分类列表（公开访问）
   if (req.method === 'GET') {
     try {
       // 验证请求参数
@@ -139,9 +139,32 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     }
   }
 
-  // POST 请求 - 创建分类
+  // POST 请求 - 创建分类（需要认证）
   else if (req.method === 'POST') {
     try {
+      // 检查用户认证
+      const session = await getServerSession(req, res, authOptions)
+      if (!session) {
+        return errorResponse(
+          res,
+          'AUTH_UNAUTHORIZED',
+          '未授权访问',
+          undefined,
+          401
+        )
+      }
+
+      // 检查用户权限
+      if (session.user.role !== 'ADMIN' && session.user.role !== 'OPERATOR') {
+        return errorResponse(
+          res,
+          'FORBIDDEN',
+          '没有权限创建分类',
+          undefined,
+          403
+        )
+      }
+
       // 验证请求数据
       const validationResult = createCategorySchema.safeParse(req.body)
 
@@ -257,5 +280,5 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
   }
 }
 
-// 使用中间件包装处理程序
-export default withErrorHandler(withAuth(handler))
+// 使用中间件包装处理程序 - GET请求公开访问，POST请求需要认证
+export default withErrorHandler(handler)

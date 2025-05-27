@@ -55,7 +55,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       where: {
         OR: [
           { id: isNaN(Number(id)) ? undefined : Number(id) },
-          { uuid: id },
+          { uuid: Array.isArray(id) ? id[0] : id },
         ],
         deletedAt: null,
       },

@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react'
+import NextImage from 'next/image'
 import { cn } from '@/lib/utils'
 
 interface LazyImageProps {
@@ -114,15 +115,17 @@ export function LazyImage({
 
         {/* 实际图片 */}
         {isInView && !hasError && (
-          <img
+          <NextImage
             src={src}
             alt={alt}
+            fill
             className={cn(
-              'absolute inset-0 w-full h-full object-cover transition-opacity duration-300',
+              'object-cover transition-opacity duration-300',
               isLoaded ? 'opacity-100' : 'opacity-0'
             )}
             onLoad={handleLoad}
             onError={handleError}
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           />
         )}
       </div>
@@ -156,10 +159,11 @@ export function LazyImage({
 
       {/* 实际图片 */}
       {isInView && !hasError && width && height && (
-        <img
+        <NextImage
           src={src}
           alt={alt}
-          style={{ width, height }}
+          width={width}
+          height={height}
           className={cn(
             'transition-opacity duration-300',
             isLoaded ? 'opacity-100' : 'opacity-0',
@@ -167,6 +171,7 @@ export function LazyImage({
           )}
           onLoad={handleLoad}
           onError={handleError}
+          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
         />
       )}
     </div>

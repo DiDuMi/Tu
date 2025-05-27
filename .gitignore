@@ -57,3 +57,16 @@ next-env.d.ts
 
 # OS
 Thumbs.db
+
+# Temporary files and directories
+/temp/
+/temp-test/
+/shipin/
+
+# Deployment scripts (keep some, exclude others)
+*.bat
+*.ps1
+
+# Environment files
+.env.baota
+.env.production

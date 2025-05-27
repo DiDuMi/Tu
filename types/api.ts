@@ -157,6 +157,7 @@ export interface MediaResponse {
  * 媒体上传响应类型
  */
 export interface MediaUploadResponse {
+  taskId?: string // 上传任务ID
   id: number
   uuid: string
   type: string
@@ -186,6 +187,9 @@ export interface MediaUploadResponse {
   }
   createdAt?: string
   updatedAt?: string
+  // 去重相关信息
+  isDuplicate?: boolean // 是否为重复文件
+  spaceSaved?: number   // 节省的存储空间（字节）
 }
 
 /**

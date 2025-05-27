@@ -110,6 +110,97 @@
     @apply bg-orange-500 hover:bg-orange-600 focus:ring-orange-500;
   }
 
+  /* 主题颜色应用到其他元素 */
+  .theme-blue {
+    --primary-color: theme('colors.blue.500');
+    --primary-hover: theme('colors.blue.600');
+  }
+
+  .theme-purple {
+    --primary-color: theme('colors.purple.500');
+    --primary-hover: theme('colors.purple.600');
+  }
+
+  .theme-green {
+    --primary-color: theme('colors.green.500');
+    --primary-hover: theme('colors.green.600');
+  }
+
+  .theme-orange {
+    --primary-color: theme('colors.orange.500');
+    --primary-hover: theme('colors.orange.600');
+  }
+
+  /* 主题颜色应用到链接和活跃状态 */
+  .theme-blue .text-primary-600 {
+    @apply text-blue-600;
+  }
+
+  .theme-purple .text-primary-600 {
+    @apply text-purple-600;
+  }
+
+  .theme-green .text-primary-600 {
+    @apply text-green-600;
+  }
+
+  .theme-orange .text-primary-600 {
+    @apply text-orange-600;
+  }
+
+  /* 主题颜色应用到背景 */
+  .theme-blue .bg-primary-50 {
+    @apply bg-blue-50;
+  }
+
+  .theme-purple .bg-primary-50 {
+    @apply bg-purple-50;
+  }
+
+  .theme-green .bg-primary-50 {
+    @apply bg-green-50;
+  }
+
+  .theme-orange .bg-primary-50 {
+    @apply bg-orange-50;
+  }
+
+  /* 暗色模式下的主题颜色 */
+  .dark.theme-blue .btn-primary {
+    @apply bg-blue-600 hover:bg-blue-700 focus:ring-blue-500;
+  }
+
+  .dark.theme-purple .btn-primary {
+    @apply bg-purple-600 hover:bg-purple-700 focus:ring-purple-500;
+  }
+
+  .dark.theme-green .btn-primary {
+    @apply bg-green-600 hover:bg-green-700 focus:ring-green-500;
+  }
+
+  .dark.theme-orange .btn-primary {
+    @apply bg-orange-600 hover:bg-orange-700 focus:ring-orange-500;
+  }
+
+  /* 暗色模式下的主题颜色应用到链接 */
+  .dark.theme-blue .text-primary-600 {
+    @apply text-blue-400;
+  }
+
+  .dark.theme-purple .text-primary-600 {
+    @apply text-purple-400;
+  }
+
+  .dark.theme-green .text-primary-600 {
+    @apply text-green-400;
+  }
+
+  .dark.theme-orange .text-primary-600 {
+    @apply text-orange-400;
+  }
+
+
+
   /* 云媒体容器样式 */
   .cloud-video-container {
     @apply block mx-auto w-full mb-4;
@@ -147,5 +238,94 @@
 
   .prose .cloud-video-container video {
     @apply rounded-lg shadow-sm;
+  }
+
+  /* 内容区域视频优化样式 */
+  .prose-content video {
+    @apply w-full max-w-none mx-auto rounded-lg shadow-lg;
+    max-height: 70vh;
+    min-height: 300px;
+  }
+
+  /* 图片样式仅在内容详情页面应用 */
+  .prose-content img {
+    @apply w-full max-w-none mx-auto rounded-lg shadow-sm;
+  }
+
+  /* 响应式视频优化 */
+  @media (max-width: 768px) {
+    .prose-content video {
+      min-height: 200px;
+      max-height: 50vh;
+    }
+
+    .video-optimized-container .relative {
+      max-width: 100% !important;
+      margin: 0 -1rem;
+    }
+
+    .iframe-optimized-container .relative {
+      max-width: 100% !important;
+      margin: 0 -1rem;
+    }
+  }
+
+  /* 超大屏幕优化 */
+  @media (min-width: 1536px) {
+    .video-optimized-container .relative {
+      max-width: 6xl;
+    }
+
+    .iframe-optimized-container .relative {
+      max-width: 6xl;
+    }
+  }
+
+  /* 视频容器居中优化 */
+  .prose-content > p:has(video),
+  .prose-content > div:has(video) {
+    @apply text-center;
+  }
+
+  /* 确保视频在prose容器中不受宽度限制 */
+  .prose.max-w-none video {
+    @apply max-w-full;
+  }
+}
+
+@layer utilities {
+  /* 文本截断工具类 */
+  .line-clamp-1 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 1;
+  }
+
+  .line-clamp-2 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .line-clamp-3 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+  }
+
+  /* 移动端优化 */
+  @media (max-width: 640px) {
+    .mobile-text-xs {
+      font-size: 0.75rem;
+      line-height: 1rem;
+    }
+
+    .mobile-text-sm {
+      font-size: 0.875rem;
+      line-height: 1.25rem;
+    }
   }
 }

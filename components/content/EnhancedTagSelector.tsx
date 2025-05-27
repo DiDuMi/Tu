@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react'
+
 import { Input } from '@/components/ui/Input'
 import { Label } from '@/components/ui/Label'
 
@@ -34,10 +35,10 @@ export default function EnhancedTagSelector({
     filtered.sort((a, b) => {
       const aSelected = selectedTagIds.includes(a.id)
       const bSelected = selectedTagIds.includes(b.id)
-      
+
       if (aSelected && !bSelected) return -1
       if (!aSelected && bSelected) return 1
-      
+
       return (b.useCount || 0) - (a.useCount || 0)
     })
 
@@ -63,7 +64,7 @@ export default function EnhancedTagSelector({
   return (
     <div className={className}>
       <Label className="text-sm font-medium text-gray-700">标签</Label>
-      
+
       {/* 搜索框 */}
       <div className="mt-2">
         <Input

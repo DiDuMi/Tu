@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import NextImage from 'next/image'
 import { getImageDimensions } from '@/lib/cover-image-utils'
 
 interface ImagePreviewProps {
@@ -9,12 +10,12 @@ interface ImagePreviewProps {
   onClick?: () => void
 }
 
-export default function ImagePreview({ 
-  src, 
-  alt, 
-  className = '', 
+export default function ImagePreview({
+  src,
+  alt,
+  className = '',
   showInfo = false,
-  onClick 
+  onClick
 }: ImagePreviewProps) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
@@ -25,7 +26,7 @@ export default function ImagePreview({
     if (src && showInfo) {
       // 获取图片尺寸
       getImageDimensions(src).then(setDimensions)
-      
+
       // 尝试获取文件大小（仅对本地文件有效）
       if (src.startsWith('/') || src.includes(window.location.origin)) {
         fetch(src, { method: 'HEAD' })
@@ -60,7 +61,7 @@ export default function ImagePreview({
           <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-primary-500"></div>
         </div>
       )}
-      
+
       {error ? (
         <div className="absolute inset-0 flex items-center justify-center bg-gray-100 text-gray-400">
           <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -68,13 +69,15 @@ export default function ImagePreview({
           </svg>
         </div>
       ) : (
-        <img
+        <NextImage
           src={src}
           alt={alt}
-          className="w-full h-full object-cover"
+          fill
+          className="object-cover"
           onLoad={handleLoad}
           onError={handleError}
           style={{ display: loading ? 'none' : 'block' }}
+          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
         />
       )}
 

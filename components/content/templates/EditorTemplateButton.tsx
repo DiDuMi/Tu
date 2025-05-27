@@ -1,43 +1,34 @@
 import { useState, useEffect } from 'react'
 import useSWR from 'swr'
+
 import { Button } from '@/components/ui/Button'
-import { Card, CardContent } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 import { Input } from '@/components/ui/Input'
-import TemplateEditor from './TemplateEditor'
-import { fetcher } from '@/lib/utils'
 
-interface Template {
-  id: number
-  title: string
-  content: string
-  type: 'HEADER' | 'FOOTER' | 'GENERAL'
-  description?: string
-  tags: Array<{
-    id: number
-    name: string
-    slug: string
-  }>
-  createdAt: string
-  updatedAt: string
-}
+import { fetcher } from '@/lib/fetcher'
+
+import TemplateEditor from './TemplateEditor'
+import TemplateItem, { type Template } from './TemplateItem'
 
 interface EditorTemplateButtonProps {
   onInsertTemplate: (content: string, position: 'top' | 'cursor' | 'bottom') => void
   title?: string
   className?: string
+  enableSmartRecommendation?: boolean
 }
 
 export default function EditorTemplateButton({
   onInsertTemplate,
   title = '',
-  className = ''
+  className = '',
+  enableSmartRecommendation = true
 }: EditorTemplateButtonProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedTags, setSelectedTags] = useState<number[]>([])
   const [filteredTemplates, setFilteredTemplates] = useState<Template[]>([])
   const [showCreateModal, setShowCreateModal] = useState(false)
+  const [smartRecommendationEnabled, setSmartRecommendationEnabled] = useState(enableSmartRecommendation)
 
   // 获取模板数据
   const { data: templatesData, error, mutate: mutateTemplates } = useSWR(
@@ -75,16 +66,16 @@ export default function EditorTemplateButton({
     )
 
     // 按匹配度和更新时间排序，优先显示匹配度高的和最近更新的
-    return matchedTemplates.sort((a, b) => {
+    return matchedTemplates.sort((a: Template, b: Template) => {
       // 计算匹配的标签数量
-      const aMatches = a.tags.filter(tag =>
+      const aMatches = a.tags.filter((tag: any) =>
         titleTags.some(titleTag =>
           tag.name.toLowerCase().includes(titleTag.toLowerCase()) ||
           tag.slug.toLowerCase().includes(titleTag.toLowerCase())
         )
       ).length
 
-      const bMatches = b.tags.filter(tag =>
+      const bMatches = b.tags.filter((tag: any) =>
         titleTags.some(titleTag =>
           tag.name.toLowerCase().includes(titleTag.toLowerCase()) ||
           tag.slug.toLowerCase().includes(titleTag.toLowerCase())
@@ -158,7 +149,7 @@ export default function EditorTemplateButton({
     setShowCreateModal(false)
   }
 
-  const recommendedTemplates = getRecommendedTemplates()
+  const recommendedTemplates = smartRecommendationEnabled ? getRecommendedTemplates() : []
 
   if (error) {
     return null
@@ -221,6 +212,27 @@ export default function EditorTemplateButton({
               onChange={(e) => setSearchTerm(e.target.value)}
               className="text-sm"
             />
+
+            {/* 智能推荐开关 */}
+            <div className="mt-3 flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="smartRecommendation"
+                  checked={smartRecommendationEnabled}
+                  onChange={(e) => setSmartRecommendationEnabled(e.target.checked)}
+                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                <label htmlFor="smartRecommendation" className="text-sm text-gray-600">
+                  智能推荐
+                </label>
+                {recommendedTemplates.length > 0 && (
+                  <span className="text-xs text-orange-600 bg-orange-50 px-2 py-1 rounded-full">
+                    {recommendedTemplates.length} 个推荐
+                  </span>
+                )}
+              </div>
+            </div>
 
             {/* 标签过滤 */}
             {tags.length > 0 && (
@@ -308,82 +320,6 @@ export default function EditorTemplateButton({
           onCancel={handleCreateCancel}
         />
       )}
-    </div>
-  )
-}
-
-// 模板项组件
-interface TemplateItemProps {
-  template: Template
-  onInsert: (template: Template, position: 'top' | 'cursor' | 'bottom') => void
-  isRecommended: boolean
-}
-
-function TemplateItem({ template, onInsert, isRecommended }: TemplateItemProps) {
-  const [showActions, setShowActions] = useState(false)
-
-  return (
-    <div
-      className={`p-3 rounded-lg border transition-colors cursor-pointer ${
-        isRecommended
-          ? 'border-orange-200 bg-orange-50 hover:bg-orange-100'
-          : 'border-gray-200 bg-gray-50 hover:bg-gray-100'
-      }`}
-      onMouseEnter={() => setShowActions(true)}
-      onMouseLeave={() => setShowActions(false)}
-    >
-      <div className="flex items-start justify-between">
-        <div className="flex-1 min-w-0">
-          <h6 className="text-sm font-medium text-gray-900 truncate">
-            {template.title || '无标题模板'}
-          </h6>
-          {template.description && (
-            <p className="text-xs text-gray-500 mt-1 line-clamp-2">
-              {template.description}
-            </p>
-          )}
-          {template.tags.length > 0 && (
-            <div className="flex flex-wrap gap-1 mt-2">
-              {template.tags.slice(0, 3).map((tag) => (
-                <Badge key={tag.id} variant="secondary" className="text-xs">
-                  {tag.name}
-                </Badge>
-              ))}
-              {template.tags.length > 3 && (
-                <Badge variant="secondary" className="text-xs">
-                  +{template.tags.length - 3}
-                </Badge>
-              )}
-            </div>
-          )}
-        </div>
-
-        {showActions && (
-          <div className="flex flex-col gap-1 ml-2">
-            <button
-              onClick={() => onInsert(template, 'top')}
-              className="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
-              title="插入到顶部"
-            >
-              顶部
-            </button>
-            <button
-              onClick={() => onInsert(template, 'cursor')}
-              className="px-2 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700"
-              title="插入到光标位置"
-            >
-              光标
-            </button>
-            <button
-              onClick={() => onInsert(template, 'bottom')}
-              className="px-2 py-1 text-xs bg-purple-600 text-white rounded hover:bg-purple-700"
-              title="插入到底部"
-            >
-              底部
-            </button>
-          </div>
-        )}
-      </div>
     </div>
   )
 }

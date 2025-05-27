@@ -21,6 +21,11 @@ import ContentCreationProgress from '@/components/content/ContentCreationProgres
 import AutoSaveIndicator from '@/components/content/AutoSaveIndicator'
 import KeyboardShortcuts from '@/components/content/KeyboardShortcuts'
 import EditorTemplateButton from '@/components/content/templates/EditorTemplateButton'
+import LinkTemplateModal from '@/components/editor/LinkTemplateModal'
+import BatchUploadButton from '@/components/content/BatchUploadButton'
+import MediaSortButton from '@/components/content/MediaSortButton'
+import BatchUploadDialog from '@/components/content/BatchUploadDialog'
+
 import { useAutoSave } from '@/hooks/useAutoSave'
 import { clearContentCache } from '@/lib/cache-utils'
 
@@ -42,7 +47,14 @@ export default function EditContent() {
 
   // 编辑器相关状态
   const [editorRef, setEditorRef] = useState<any>(null)
-  const [templateRecommendationEnabled, setTemplateRecommendationEnabled] = useState(true)
+
+  // 链接模板状态
+  const [isLinkTemplateModalOpen, setIsLinkTemplateModalOpen] = useState(false)
+
+  // 批量上传状态
+  const [showBatchUpload, setShowBatchUpload] = useState(false)
+
+
 
   // 自动保存功能
   const autoSaveData = {
@@ -100,7 +112,7 @@ export default function EditContent() {
   )
 
   // 获取分类列表
-  const { data: categoriesData, error: categoriesError, mutate: reloadCategories } = useSWR(
+  const { data: categoriesData, error: categoriesError } = useSWR(
     session ? '/api/v1/categories' : null,
     fetcher,
     {
@@ -207,6 +219,38 @@ export default function EditContent() {
       setContent(content + '\n\n' + templateContent)
     }
   }
+
+  // 处理批量上传
+  const handleBatchUpload = () => {
+    setShowBatchUpload(true)
+  }
+
+  // 处理批量上传完成
+  const handleBatchUploadComplete = (mediaList: any[]) => {
+    if (editorRef && mediaList.length > 0) {
+      // 将上传的媒体插入到编辑器中
+      const mediaHtml = mediaList.map(media => {
+        console.log('处理媒体:', media) // 调试日志
+
+        // API返回的媒体类型是大写的 IMAGE, VIDEO, AUDIO
+        if (media.type === 'IMAGE') {
+          return `<img src="${media.url}" alt="${media.title || media.name || '图片'}" style="max-width: 100%; height: auto;" />`
+        } else if (media.type === 'VIDEO') {
+          return `<video controls style="max-width: 100%; height: auto;"><source src="${media.url}" type="${media.mimeType || 'video/mp4'}">您的浏览器不支持视频播放。</video>`
+        } else if (media.type === 'AUDIO') {
+          return `<audio controls><source src="${media.url}" type="${media.mimeType || 'audio/mpeg'}">您的浏览器不支持音频播放。</audio>`
+        }
+        return ''
+      }).filter(html => html !== '').join('<br><br>')
+
+      if (mediaHtml) {
+        editorRef.insertContent('<br><br>' + mediaHtml)
+      }
+    }
+    setShowBatchUpload(false)
+  }
+
+
 
   // 处理表单提交
   const handleSubmit = async (e: React.FormEvent) => {
@@ -456,25 +500,35 @@ export default function EditContent() {
 
                     {/* 编辑器工具栏 */}
                     <div className="flex items-center space-x-3">
+                      {/* 批量上传按钮 */}
+                      <BatchUploadButton
+                        onClick={handleBatchUpload}
+                      />
+
+                      {/* 媒体排序按钮 */}
+                      <MediaSortButton
+                        editorRef={{ current: editorRef }}
+                      />
+
                       {/* 预设模板按钮 */}
                       <EditorTemplateButton
                         onInsertTemplate={handleInsertTemplate}
                         title={title}
+                        enableSmartRecommendation={true}
                       />
 
-                      {/* 模板推荐开关 */}
-                      <div className="flex items-center space-x-2">
-                        <input
-                          type="checkbox"
-                          id="templateRecommendation"
-                          checked={templateRecommendationEnabled}
-                          onChange={(e) => setTemplateRecommendationEnabled(e.target.checked)}
-                          className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-                        />
-                        <Label htmlFor="templateRecommendation" className="text-sm text-gray-600">
-                          智能推荐
-                        </Label>
-                      </div>
+                      {/* 链接模板按钮 */}
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setIsLinkTemplateModalOpen(true)}
+                        className="flex items-center gap-2"
+                        title="管理下载链接"
+                      >
+                        <span>🔗</span>
+                        链接模板
+                      </Button>
                     </div>
                   </div>
 
@@ -637,6 +691,27 @@ export default function EditContent() {
           onSave={() => saveNow()}
           onPublish={contentData?.data?.status === 'DRAFT' ? handlePublish : undefined}
         />
+
+        {/* 链接模板模态框 */}
+        {id && typeof id === 'string' && (
+          <LinkTemplateModal
+            isOpen={isLinkTemplateModalOpen}
+            onClose={() => setIsLinkTemplateModalOpen(false)}
+            pageId={id}
+            onLinksUpdated={() => {
+              // 可以在这里添加链接更新后的处理逻辑
+              console.log('下载链接已更新')
+            }}
+          />
+        )}
+
+        {/* 批量上传对话框 */}
+        <BatchUploadDialog
+          isOpen={showBatchUpload}
+          onClose={() => setShowBatchUpload(false)}
+          onUploadComplete={handleBatchUploadComplete}
+        />
+
       </div>
     </DashboardLayout>
   )

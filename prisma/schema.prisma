@@ -26,6 +26,7 @@ model User {
   deletedAt       DateTime?
   userGroupId     Int?
   comments        Comment[]
+  reviewedComments Comment[] @relation("ReviewedComments")
   likes           Like[]
   favorites       Favorite[]
   media           Media[]
@@ -39,6 +40,9 @@ model User {
   userPoint       UserPoint?
   socialAccounts  SocialAccount[]
   contentTemplates ContentTemplate[]
+  apiKeys         ApiKey[]
+  downloadLinks   DownloadLink[]
+  downloadPurchases DownloadPurchase[]
 
   @@index([email])
   @@index([role])
@@ -88,6 +92,7 @@ model Page {
   pageTags           PageTag[]
   versions           PageVersion[]
   reviewFeedbacks    ReviewFeedback[]
+  downloadLinks      DownloadLink[]
 
   @@index([userId])
   @@index([categoryId])
@@ -198,6 +203,13 @@ model Comment {
   content     String
   isAnonymous Boolean   @default(false)
   nickname    String?
+  email       String?   // 游客邮箱（可选）
+  guestId     String?   // 游客标识符（Cookie/localStorage生成）
+  status      String @default("PENDING") // 审核状态: PENDING, APPROVED, REJECTED
+  reviewedAt  DateTime? // 审核时间
+  reviewedBy  Int?      // 审核人ID
+  reviewNote  String?   // 审核备注
+  pointsAwarded Boolean @default(false) // 是否已奖励积分
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   deletedAt   DateTime?
@@ -208,14 +220,22 @@ model Comment {
   replies     Comment[] @relation("CommentToComment")
   user        User?     @relation(fields: [userId], references: [id])
   page        Page      @relation(fields: [pageId], references: [id])
+  reviewer    User?     @relation("ReviewedComments", fields: [reviewedBy], references: [id])
 
   @@index([pageId])
   @@index([userId])
   @@index([parentId])
+  @@index([status])
+  @@index([guestId])
+  @@index([reviewedBy])
   // 复合索引优化评论查询
   @@index([pageId, parentId, deletedAt])
   @@index([pageId, deletedAt, createdAt])
+  @@index([pageId, status, deletedAt])
+  @@index([status, createdAt])
 }
+
+
 
 model Like {
   id        Int      @id @default(autoincrement())
@@ -243,19 +263,38 @@ model Favorite {
   @@index([pageId])
 }
 
+// 文件哈希表 - 存储唯一文件的物理信息
+model FileHash {
+  id          Int      @id @default(autoincrement())
+  uuid        String   @unique @default(uuid())
+  hash        String   @unique  // SHA-256哈希值
+  filePath    String   // 物理文件路径（相对于public目录）
+  fileSize    Int      // 文件大小（字节）
+  mimeType    String   // MIME类型
+  width       Int?     // 图片/视频宽度
+  height      Int?     // 图片/视频高度
+  duration    Int?     // 视频/音频时长（秒）
+  refCount    Int      @default(1)  // 引用计数
+  thumbnailPath String? // 缩略图路径
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // 关联到媒体记录
+  media       Media[]
+
+  @@index([hash])
+  @@index([fileSize])
+  @@index([mimeType])
+  @@index([refCount])
+}
+
 model Media {
   id           Int            @id @default(autoincrement())
   uuid         String         @unique @default(uuid())
   type         String
-  url          String
+  url          String         // 访问URL（基于FileHash生成）
   title        String?
   description  String?
-  fileSize     Int?
-  size         Int?           // 文件大小（字节）
-  mimeType     String?
-  width        Int?
-  height       Int?
-  duration     Int?
   thumbnailUrl String?        // 缩略图URL
   storageType  String         @default("LOCAL")
   status       String         @default("ACTIVE")
@@ -265,14 +304,19 @@ model Media {
   deletedAt    DateTime?
   userId       Int
   categoryId   Int?
+  fileHashId   Int?           // 关联到FileHash表
+
+  // 关联关系
   category     MediaCategory? @relation(fields: [categoryId], references: [id])
   user         User           @relation(fields: [userId], references: [id])
+  fileHash     FileHash?      @relation(fields: [fileHashId], references: [id])
   versions     MediaVersion[]
   mediaTags    MediaTag[]     @relation("MediaToMediaTag")
 
   @@index([type])
   @@index([userId])
   @@index([categoryId])
+  @@index([fileHashId])
   @@index([status])
   @@index([createdAt])
   @@index([deletedAt])
@@ -371,11 +415,19 @@ model SignInRecord {
   signInDate     DateTime @default(now())
   continuousDays Int      @default(1)
   pointsEarned   Int
+  source         String   @default("web") // 签到来源：web, mobile, telegram_bot, api, admin
+  ipAddress      String?  // IP地址
+  userAgent      String?  // 用户代理
+  apiKeyId       Int?     // 使用的API密钥ID
+  extraData      String?  // 额外数据（JSON格式）
   user           User     @relation(fields: [userId], references: [id])
+  apiKey         ApiKey?  @relation(fields: [apiKeyId], references: [id])
 
   @@unique([userId, signInDate])
   @@index([userId])
   @@index([signInDate])
+  @@index([source])
+  @@index([apiKeyId])
 }
 
 model PointProduct {
@@ -527,4 +579,84 @@ model TemplateTag {
   @@unique([templateId, tagId])
   @@index([templateId])
   @@index([tagId])
+}
+
+// API密钥管理模型
+model ApiKey {
+  id            Int            @id @default(autoincrement())
+  uuid          String         @unique @default(uuid())
+  userId        Int            // 密钥所有者
+  keyName       String         // 密钥名称
+  apiKey        String         @unique // API密钥（加密存储）
+  permissions   String         // 权限列表（JSON格式）
+  isActive      Boolean        @default(true) // 是否启用
+  expiresAt     DateTime?      // 过期时间
+  lastUsedAt    DateTime?      // 最后使用时间
+  usageCount    Int            @default(0) // 使用次数
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  signInRecords SignInRecord[] // 关联的签到记录
+
+  @@index([userId])
+  @@index([apiKey])
+  @@index([isActive])
+  @@index([expiresAt])
+  @@index([lastUsedAt])
+}
+
+// 下载链接模型
+model DownloadLink {
+  id          Int      @id @default(autoincrement())
+  uuid        String   @unique @default(uuid())
+  pageId      Int      // 关联的页面ID
+  userId      Int      // 创建者用户ID
+  platform    String   // 网盘平台类型
+  url         String   // 下载链接URL（加密存储）
+  extractCode String?  // 提取码（加密存储）
+  pointCost   Int      // 所需积分
+  title       String   // 链接标题/描述
+  description String?  // 详细描述
+  isActive    Boolean  @default(true) // 是否启用
+  sortOrder   Int      @default(0) // 排序顺序
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  deletedAt   DateTime? // 软删除
+
+  // 关联
+  page        Page     @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [userId], references: [id])
+  purchases   DownloadPurchase[] // 购买记录
+
+  @@index([pageId])
+  @@index([userId])
+  @@index([platform])
+  @@index([isActive])
+  @@index([deletedAt])
+  @@index([sortOrder])
+}
+
+// 下载链接购买记录模型
+model DownloadPurchase {
+  id           Int          @id @default(autoincrement())
+  uuid         String       @unique @default(uuid())
+  userId       Int          // 购买用户ID
+  downloadId   Int          // 下载链接ID
+  pointCost    Int          // 消费的积分
+  status       String       @default("COMPLETED") // 购买状态：COMPLETED, REFUNDED
+  accessCount  Int          @default(0) // 访问次数
+  lastAccess   DateTime?    // 最后访问时间
+  expiresAt    DateTime?    // 访问过期时间（可选）
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  // 关联
+  user         User         @relation(fields: [userId], references: [id])
+  downloadLink DownloadLink @relation(fields: [downloadId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, downloadId]) // 防止重复购买
+  @@index([userId])
+  @@index([downloadId])
+  @@index([status])
+  @@index([createdAt])
 }

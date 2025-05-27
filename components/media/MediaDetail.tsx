@@ -8,6 +8,7 @@ import Link from 'next/link'
 import { Tab } from '@headlessui/react'
 import useSWR from 'swr'
 import { fetcher } from '@/lib/fetcher'
+import { VideoPlayer } from '@/components/ui/AdvancedVideo'
 
 interface MediaDetailProps {
   media: MediaResponse
@@ -124,13 +125,14 @@ const MediaDetail: React.FC<MediaDetailProps> = ({ media, onUpdate, className = 
           />
         )}
         {isVideo && (
-          <video
+          <VideoPlayer
             src={media.url}
-            controls
-            className="max-w-full max-h-[500px]"
-          >
-            您的浏览器不支持视频播放
-          </video>
+            poster={media.thumbnailUrl}
+            enableLazyLoading={true}
+            autoOptimizeFormat={true}
+            compressionQuality="auto"
+            containerClassName="max-w-full max-h-[500px]"
+          />
         )}
         {isAudio && (
           <div className="w-full max-w-md p-6 bg-white rounded-lg shadow-sm flex flex-col items-center">

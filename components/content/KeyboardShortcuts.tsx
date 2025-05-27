@@ -20,19 +20,19 @@ export default function KeyboardShortcuts({
         e.preventDefault()
         onSave?.()
       }
-      
+
       // Ctrl/Cmd + Enter: 发布
       if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
         e.preventDefault()
         onPublish?.()
       }
-      
+
       // Escape: 取消
       if (e.key === 'Escape') {
         e.preventDefault()
         onCancel?.()
       }
-      
+
       // Ctrl/Cmd + /: 显示快捷键帮助
       if ((e.ctrlKey || e.metaKey) && e.key === '/') {
         e.preventDefault()
@@ -49,7 +49,7 @@ export default function KeyboardShortcuts({
       <button
         type="button"
         onClick={() => setShowShortcuts(true)}
-        className="fixed bottom-4 right-4 bg-gray-800 text-white p-2 rounded-full shadow-lg hover:bg-gray-700 transition-colors z-50"
+        className="fixed bottom-4 right-4 md:bottom-6 md:right-6 bg-gray-800 text-white p-2 rounded-full shadow-lg hover:bg-gray-700 transition-colors z-50"
         title="显示快捷键 (Ctrl+/)"
       >
         <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
@@ -73,7 +73,7 @@ export default function KeyboardShortcuts({
             </svg>
           </button>
         </div>
-        
+
         <div className="space-y-3">
           <div className="flex justify-between items-center">
             <span className="text-sm text-gray-600">保存草稿</span>
@@ -87,7 +87,7 @@ export default function KeyboardShortcuts({
               </kbd>
             </div>
           </div>
-          
+
           <div className="flex justify-between items-center">
             <span className="text-sm text-gray-600">提交发布</span>
             <div className="flex items-center space-x-1">
@@ -100,14 +100,14 @@ export default function KeyboardShortcuts({
               </kbd>
             </div>
           </div>
-          
+
           <div className="flex justify-between items-center">
             <span className="text-sm text-gray-600">取消编辑</span>
             <kbd className="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded">
               Esc
             </kbd>
           </div>
-          
+
           <div className="flex justify-between items-center">
             <span className="text-sm text-gray-600">显示快捷键</span>
             <div className="flex items-center space-x-1">
@@ -121,7 +121,7 @@ export default function KeyboardShortcuts({
             </div>
           </div>
         </div>
-        
+
         <div className="mt-4 pt-4 border-t border-gray-200">
           <p className="text-xs text-gray-500">
             在 Mac 上使用 Cmd 键替代 Ctrl 键

@@ -6,11 +6,11 @@ import { v4 as uuidv4 } from 'uuid'
 import { prisma } from '@/lib/prisma'
 import { withErrorHandler, withAuth } from '@/lib/middleware'
 import { successResponse, errorResponse } from '@/lib/api'
-import { 
-  processImage, 
-  processVideo, 
-  processAudio, 
-  getMediaStoragePath, 
+import {
+  processImage,
+  processVideo,
+  processAudio,
+  getMediaStoragePath,
   getMediaUrl,
   formatMediaInfo
 } from '@/lib/media'
@@ -138,7 +138,7 @@ export default withErrorHandler(
       // 生成新的文件名和路径
       const originalExt = path.extname(media.url)
       const filename = `${path.basename(media.url, originalExt)}_v${versionNumber}${originalExt}`
-      const storagePath = getMediaStoragePath(filename)
+      const storagePath = getMediaStoragePath(user.id, filename)
 
       // 确保原始文件存在
       const originalPath = path.join(process.cwd(), 'public', new URL(media.url).pathname)
@@ -170,7 +170,7 @@ export default withErrorHandler(
           }
 
           const imageParams = imageValidation.data
-          
+
           // 处理图片
           result = await processImage(originalPath, storagePath, {
             maxWidth: imageParams.width,
@@ -199,7 +199,7 @@ export default withErrorHandler(
           }
 
           const videoParams = videoValidation.data
-          
+
           // 处理视频
           result = await processVideo(originalPath, storagePath, {
             maxWidth: videoParams.width,
@@ -227,7 +227,7 @@ export default withErrorHandler(
           }
 
           const audioParams = audioValidation.data
-          
+
           // 处理音频
           result = await processAudio(originalPath, storagePath, {
             quality: audioParams.quality,
@@ -261,11 +261,11 @@ export default withErrorHandler(
 
       // 获取新媒体URL
       const url = getMediaUrl(storagePath)
-      
+
       // 创建版本记录
       const createVersion = body.createVersion !== false
       let version
-      
+
       if (createVersion) {
         version = await prisma.mediaVersion.create({
           data: {
@@ -273,11 +273,11 @@ export default withErrorHandler(
             mediaId: media.id,
             versionNumber,
             url,
-            width: result.width,
-            height: result.height,
-            duration: result.duration,
+            width: 'width' in result ? result.width : null,
+            height: 'height' in result ? result.height : null,
+            duration: 'duration' in result ? result.duration : null,
             fileSize: result.size,
-            thumbnailUrl: result.thumbnailPath ? getMediaUrl(result.thumbnailPath) : null,
+            thumbnailUrl: 'thumbnailPath' in result && result.thumbnailPath ? getMediaUrl(result.thumbnailPath) : null,
             changeNote: body.versionNote || `处理操作: ${body.operation}`,
             userId: user.id,
           },
@@ -292,11 +292,11 @@ export default withErrorHandler(
         operation: body.operation,
         result: {
           url,
-          width: result.width,
-          height: result.height,
-          duration: result.duration,
+          width: 'width' in result ? result.width : null,
+          height: 'height' in result ? result.height : null,
+          duration: 'duration' in result ? result.duration : null,
           size: result.size,
-          thumbnailUrl: result.thumbnailPath ? getMediaUrl(result.thumbnailPath) : null,
+          thumbnailUrl: 'thumbnailPath' in result && result.thumbnailPath ? getMediaUrl(result.thumbnailPath) : null,
         },
       })
     } catch (error) {

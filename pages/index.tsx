@@ -5,14 +5,12 @@ import useSWR from 'swr'
 import { Button } from '@/components/ui/Button'
 import { PageTitle } from '@/components/ui/PageTitle'
 import { fetcher } from '@/lib/api'
-import PublicLayout from '@/components/layout/PublicLayout'
-import HomeSidebarLayout from '@/components/layout/HomeSidebarLayout'
+import NewHomeSidebarLayout from '@/components/layout/NewHomeSidebarLayout'
 import ContentCard from '@/components/content/ContentCard'
-import { useUIStore } from '@/stores/uiStore'
+import FloatingButtons from '@/components/ui/FloatingButtons'
 
 export default function Home() {
   const { data: session } = useSession()
-  const { homeLayoutMode } = useUIStore()
 
   // 获取精选内容 - 优先显示指定为首页精选的内容，其次显示featured内容
   const { data: featuredData } = useSWR(
@@ -54,15 +52,7 @@ export default function Home() {
     }
   )
 
-  // 获取分类列表
-  const { data: categoriesData } = useSWR(
-    '/api/v1/categories?limit=6',
-    fetcher,
-    {
-      revalidateOnFocus: false,
-      dedupingInterval: 300000, // 5分钟内不重复请求
-    }
-  )
+
 
 
 
@@ -71,10 +61,9 @@ export default function Home() {
   const latestContents = latestData?.data?.items || []
   const archiveContents = archiveData?.data?.items || []
   const trendingContents = trendingData?.data?.items || []
-  const _categories = categoriesData?.data?.items || []
 
-  // 根据布局模式选择不同的布局组件
-  const LayoutComponent = homeLayoutMode === 'sidebar' ? HomeSidebarLayout : PublicLayout
+  // 默认使用侧边栏布局，提供更好的导航体验
+  const LayoutComponent = NewHomeSidebarLayout
 
   // 首页内容组件
   const HomeContent = () => (
@@ -115,7 +104,7 @@ export default function Home() {
                   </Link>
                   <Link href="/search" className="flex-1">
                     <Button size="lg" className="w-full bg-white/10 text-white border-2 border-white/30 hover:bg-white hover:text-primary-600 transition-all duration-200 backdrop-blur-sm font-semibold px-4 sm:px-8">
-                      🔍 浏览内容
+                      🔍 搜索内容
                     </Button>
                   </Link>
                 </>
@@ -128,7 +117,7 @@ export default function Home() {
                   </Link>
                   <Link href="/search" className="flex-1">
                     <Button size="lg" className="w-full bg-white/10 text-white border-2 border-white/30 hover:bg-white hover:text-primary-600 transition-all duration-200 backdrop-blur-sm font-semibold px-4 sm:px-8">
-                      🔍 浏览内容
+                      🔍 搜索内容
                     </Button>
                   </Link>
                 </>
@@ -142,11 +131,11 @@ export default function Home() {
 
 
 
-      {/* 精选内容 */}
+      {/* 精选推荐 */}
       {featuredContents.length > 0 && (
         <div className="mt-16">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-dark-text">精选内容</h2>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-dark-text">精选推荐</h2>
             <Link href="/search?sort=home_featured" className="text-primary-600 hover:text-primary-500 dark:text-dark-primary dark:hover:text-dark-primary/90">
               查看更多 &rarr;
             </Link>
@@ -379,6 +368,9 @@ export default function Home() {
       keywords={["内容平台", "知识分享", "创作社区"]}
     >
       <HomeContent />
+
+      {/* 悬浮按钮 */}
+      <FloatingButtons />
     </LayoutComponent>
   )
 }

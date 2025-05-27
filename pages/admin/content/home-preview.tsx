@@ -135,11 +135,11 @@ export default function HomePreview() {
         )}
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* 精选内容 */}
+          {/* 精选推荐 */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
-                <span>精选内容</span>
+                <span>精选推荐</span>
                 <span className="text-sm font-normal text-gray-500">
                   {featuredData?.items.length || 0} / {featuredData?.total || 0}
                 </span>
@@ -158,9 +158,9 @@ export default function HomePreview() {
                 </div>
               ) : (
                 <div className="text-center py-4">
-                  <p className="text-gray-500">暂无精选内容</p>
+                  <p className="text-gray-500">暂无精选推荐</p>
                   <p className="text-xs text-gray-400 mt-1">
-                    请将内容分类设置为"精选内容"或标记为精选
+                    请将内容分类设置为"精选推荐"或标记为精选
                   </p>
                 </div>
               )}
@@ -275,7 +275,7 @@ export default function HomePreview() {
               <ol className="list-decimal list-inside space-y-1 ml-4">
                 <li>在创建或编辑内容时，选择对应的分类：</li>
                 <ul className="list-disc list-inside ml-4 mt-1 space-y-1">
-                  <li><strong>精选内容</strong>：选择"精选内容"分类或勾选"设为精选内容"</li>
+                  <li><strong>精选推荐</strong>：选择"精选推荐"分类或勾选"设为精选推荐"</li>
                   <li><strong>近期流出</strong>：选择"近期流出"分类</li>
                   <li><strong>往期补档</strong>：选择"往期补档"分类</li>
                   <li><strong>热门推荐</strong>：选择"热门推荐"分类</li>

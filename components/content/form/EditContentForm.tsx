@@ -201,7 +201,7 @@ export default function EditContentForm({
                     htmlFor="featured"
                     className="ml-2 text-sm text-gray-700"
                   >
-                    设为精选内容
+                    设为精选推荐
                   </label>
                 </div>
               </CardContent>

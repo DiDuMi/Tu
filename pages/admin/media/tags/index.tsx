@@ -1,15 +1,20 @@
-import { PlusIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline'
+import React, { useState } from 'react'
+
+import { PlusIcon } from '@heroicons/react/24/outline'
 import { GetServerSideProps } from 'next'
 import { getSession } from 'next-auth/react'
-import React, { useState } from 'react'
 import useSWR from 'swr'
 
+import { fetcher } from '@/lib/fetcher'
+
+import TagDeleteConfirm from '@/components/admin/TagDeleteConfirm'
+import TagForm from '@/components/admin/TagForm'
+import TagTable from '@/components/admin/TagTable'
 import AdminLayout from '@/components/layout/AdminLayout'
 import { Alert } from '@/components/ui/Alert'
 import { Button } from '@/components/ui/Button'
 import { Modal } from '@/components/ui/Modal'
 import { Spinner } from '@/components/ui/Spinner'
-import { fetcher } from '@/lib/fetcher'
 
 interface MediaTag {
   id: number
@@ -129,17 +134,7 @@ const MediaTagsPage: React.FC = () => {
     setIsDeleteModalOpen(true)
   }
 
-  // 预定义的颜色选项
-  const colorOptions = [
-    { value: '#3B82F6', label: '蓝色' },
-    { value: '#10B981', label: '绿色' },
-    { value: '#F59E0B', label: '黄色' },
-    { value: '#EF4444', label: '红色' },
-    { value: '#8B5CF6', label: '紫色' },
-    { value: '#EC4899', label: '粉色' },
-    { value: '#6B7280', label: '灰色' },
-    { value: '#000000', label: '黑色' }
-  ]
+  // 颜色选项已移至TagForm组件
 
   return (
     <AdminLayout title="媒体标签管理">
@@ -175,67 +170,11 @@ const MediaTagsPage: React.FC = () => {
           </div>
         ) : (
           <div className="rounded-lg border border-gray-200 bg-white p-6">
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                      标签名称
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                      颜色
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                      描述
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                      创建时间
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">
-                      操作
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200 bg-white">
-                  {data?.map(tag => (
-                    <tr key={tag.uuid}>
-                      <td className="whitespace-nowrap px-6 py-4">
-                        <div className="flex items-center">
-                          <span
-                            className="mr-2 inline-block h-3 w-3 rounded-full"
-                            style={{ backgroundColor: tag.color || '#3B82F6' }}
-                          ></span>
-                          <span className="font-medium">{tag.name}</span>
-                        </div>
-                      </td>
-                      <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
-                        {tag.color || '-'}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-500">
-                        {tag.description || '-'}
-                      </td>
-                      <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
-                        {new Date(tag.createdAt).toLocaleString()}
-                      </td>
-                      <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
-                        <button
-                          onClick={() => openEditModal(tag)}
-                          className="mr-3 text-blue-600 hover:text-blue-900"
-                        >
-                          <PencilIcon className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={() => openDeleteModal(tag)}
-                          className="text-red-600 hover:text-red-900"
-                        >
-                          <TrashIcon className="h-4 w-4" />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <TagTable
+              tags={data || []}
+              onEdit={openEditModal}
+              onDelete={openDeleteModal}
+            />
           </div>
         )}
       </div>
@@ -246,67 +185,14 @@ const MediaTagsPage: React.FC = () => {
         onClose={() => setIsCreateModalOpen(false)}
         title="添加媒体标签"
       >
-        <div className="space-y-4">
-          <div>
-            <label className="mb-1 block text-sm font-medium">标签名称 <span className="text-red-500">*</span></label>
-            <input
-              type="text"
-              name="name"
-              value={formData.name}
-              onChange={handleInputChange}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none"
-            />
-            {formErrors.name && <p className="mt-1 text-sm text-red-500">{formErrors.name}</p>}
-          </div>
-
-          <div>
-            <label className="mb-1 block text-sm font-medium">标签颜色</label>
-            <div className="flex flex-wrap gap-2">
-              {colorOptions.map(color => (
-                <button
-                  key={color.value}
-                  type="button"
-                  className={`h-8 w-8 rounded-full border-2 ${formData.color === color.value ? 'border-black' : 'border-transparent'}`}
-                  style={{ backgroundColor: color.value }}
-                  onClick={() => setFormData(prev => ({ ...prev, color: color.value }))}
-                  title={color.label}
-                />
-              ))}
-              <input
-                type="color"
-                name="color"
-                value={formData.color}
-                onChange={handleInputChange}
-                className="h-8 w-8 cursor-pointer rounded-full border-0"
-                title="自定义颜色"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="mb-1 block text-sm font-medium">描述</label>
-            <textarea
-              name="description"
-              value={formData.description}
-              onChange={handleInputChange}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none"
-              rows={3}
-            />
-          </div>
-
-          {formErrors.submit && (
-            <Alert variant="error">{formErrors.submit}</Alert>
-          )}
-
-          <div className="flex justify-end space-x-3 pt-4">
-            <Button variant="outline" onClick={() => setIsCreateModalOpen(false)}>
-              取消
-            </Button>
-            <Button onClick={handleCreateTag}>
-              创建
-            </Button>
-          </div>
-        </div>
+        <TagForm
+          formData={formData}
+          formErrors={formErrors}
+          onInputChange={handleInputChange}
+          onColorChange={(color) => setFormData(prev => ({ ...prev, color }))}
+          onSubmit={handleCreateTag}
+          onCancel={() => setIsCreateModalOpen(false)}
+        />
       </Modal>
 
       {/* 编辑标签模态框 */}
@@ -315,67 +201,15 @@ const MediaTagsPage: React.FC = () => {
         onClose={() => setIsEditModalOpen(false)}
         title="编辑媒体标签"
       >
-        <div className="space-y-4">
-          <div>
-            <label className="mb-1 block text-sm font-medium">标签名称 <span className="text-red-500">*</span></label>
-            <input
-              type="text"
-              name="name"
-              value={formData.name}
-              onChange={handleInputChange}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none"
-            />
-            {formErrors.name && <p className="mt-1 text-sm text-red-500">{formErrors.name}</p>}
-          </div>
-
-          <div>
-            <label className="mb-1 block text-sm font-medium">标签颜色</label>
-            <div className="flex flex-wrap gap-2">
-              {colorOptions.map(color => (
-                <button
-                  key={color.value}
-                  type="button"
-                  className={`h-8 w-8 rounded-full border-2 ${formData.color === color.value ? 'border-black' : 'border-transparent'}`}
-                  style={{ backgroundColor: color.value }}
-                  onClick={() => setFormData(prev => ({ ...prev, color: color.value }))}
-                  title={color.label}
-                />
-              ))}
-              <input
-                type="color"
-                name="color"
-                value={formData.color}
-                onChange={handleInputChange}
-                className="h-8 w-8 cursor-pointer rounded-full border-0"
-                title="自定义颜色"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="mb-1 block text-sm font-medium">描述</label>
-            <textarea
-              name="description"
-              value={formData.description}
-              onChange={handleInputChange}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none"
-              rows={3}
-            />
-          </div>
-
-          {formErrors.submit && (
-            <Alert variant="error">{formErrors.submit}</Alert>
-          )}
-
-          <div className="flex justify-end space-x-3 pt-4">
-            <Button variant="outline" onClick={() => setIsEditModalOpen(false)}>
-              取消
-            </Button>
-            <Button onClick={handleEditTag}>
-              保存
-            </Button>
-          </div>
-        </div>
+        <TagForm
+          formData={formData}
+          formErrors={formErrors}
+          isEdit={true}
+          onInputChange={handleInputChange}
+          onColorChange={(color) => setFormData(prev => ({ ...prev, color }))}
+          onSubmit={handleEditTag}
+          onCancel={() => setIsEditModalOpen(false)}
+        />
       </Modal>
 
       {/* 删除确认模态框 */}
@@ -384,21 +218,11 @@ const MediaTagsPage: React.FC = () => {
         onClose={() => setIsDeleteModalOpen(false)}
         title="删除媒体标签"
       >
-        <div className="space-y-4">
-          <p>确定要删除标签 &ldquo;{currentTag?.name}&rdquo; 吗？</p>
-          <p className="text-sm text-red-500">
-            注意：如果该标签已被媒体文件使用，将无法删除。
-          </p>
-
-          <div className="flex justify-end space-x-3 pt-4">
-            <Button variant="outline" onClick={() => setIsDeleteModalOpen(false)}>
-              取消
-            </Button>
-            <Button variant="danger" onClick={handleDeleteTag}>
-              删除
-            </Button>
-          </div>
-        </div>
+        <TagDeleteConfirm
+          tag={currentTag}
+          onConfirm={handleDeleteTag}
+          onCancel={() => setIsDeleteModalOpen(false)}
+        />
       </Modal>
     </AdminLayout>
   )

@@ -167,7 +167,7 @@ export default function TemplateRecommendations({
 
           {recommendations.length > 0 && (
             <div className="space-y-2">
-              {recommendations.map((template) => (
+              {recommendations.map((template: any) => (
                 <div
                   key={template.id}
                   className="border border-gray-200 rounded-lg p-3 hover:border-orange-300 transition-colors cursor-pointer"

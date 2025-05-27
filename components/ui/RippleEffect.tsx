@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react'
+
 import { cn } from '@/lib/utils'
 
 interface RippleProps {
@@ -7,7 +8,7 @@ interface RippleProps {
   disabled?: boolean
   color?: string
   duration?: number
-  onClick?: (e: React.MouseEvent) => void
+  onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void
   as?: 'div' | 'button'
   type?: 'button' | 'submit' | 'reset'
 }
@@ -53,7 +54,7 @@ export const RippleEffect = React.forwardRef<HTMLElement, RippleProps & React.HT
     }, duration)
   }, [duration])
 
-  const handleClick = useCallback((event: React.MouseEvent) => {
+  const handleClick = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
     if (!disabled) {
       addRipple(event)
     }

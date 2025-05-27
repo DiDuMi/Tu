@@ -8,7 +8,7 @@ import { z } from 'zod'
 const updateUserGroupSchema = z.object({
   name: z.string().min(2, '名称至少需要2个字符').max(50, '名称不能超过50个字符').optional(),
   description: z.string().optional().nullable(),
-  permissions: z.record(z.array(z.string())).optional(),
+  permissions: z.record(z.any()).optional(), // 更灵活的权限验证
   uploadLimits: z
     .object({
       maxFileSize: z.number().optional(),
@@ -70,10 +70,13 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
   // PUT方法：更新用户组
   if (req.method === 'PUT') {
     try {
+      console.log('更新用户组请求数据:', JSON.stringify(req.body, null, 2))
+
       // 验证请求数据
       const validationResult = updateUserGroupSchema.safeParse(req.body)
 
       if (!validationResult.success) {
+        console.error('数据验证失败:', validationResult.error.format())
         return errorResponse(
           res,
           'VALIDATION_ERROR',
@@ -109,9 +112,14 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       const updateData: any = {}
       if (name) updateData.name = name
       if (description !== undefined) updateData.description = description
-      if (permissions) updateData.permissions = JSON.stringify(permissions)
+      if (permissions) {
+        console.log('处理权限数据:', permissions)
+        updateData.permissions = JSON.stringify(permissions)
+      }
       if (uploadLimits !== undefined) updateData.uploadLimits = uploadLimits ? JSON.stringify(uploadLimits) : null
       if (previewPercentage !== undefined) updateData.previewPercentage = previewPercentage
+
+      console.log('准备更新的数据:', updateData)
 
       // 更新用户组
       const updatedUserGroup = await prisma.userGroup.update({
@@ -135,13 +143,22 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
         _count: undefined,
       }
 
+      console.log('用户组更新成功:', formattedUpdatedUserGroup.name)
       return successResponse(res, formattedUpdatedUserGroup, '用户组更新成功')
     } catch (error) {
       console.error('更新用户组失败:', error)
+
+      // 提供更详细的错误信息
+      let errorMessage = '更新用户组失败'
+      if (error instanceof Error) {
+        errorMessage = error.message
+        console.error('错误堆栈:', error.stack)
+      }
+
       return errorResponse(
         res,
         'SERVER_ERROR',
-        '更新用户组失败',
+        errorMessage,
         undefined,
         500
       )

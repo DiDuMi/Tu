@@ -43,9 +43,12 @@ export default function MainLayout({
           <div className="flex justify-between h-16">
             <div className="flex">
               <div className="flex-shrink-0 flex items-center">
-                <Link href="/" className="text-xl font-bold text-primary-600 dark:text-dark-primary">
+                <button
+                  onClick={toggleSidebar}
+                  className="text-xl font-bold text-primary-600 dark:text-dark-primary hover:text-primary-700 dark:hover:text-dark-primary/80 transition-colors"
+                >
                   兔图
-                </Link>
+                </button>
               </div>
               <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
                 <Link
@@ -59,24 +62,14 @@ export default function MainLayout({
                   首页
                 </Link>
                 <Link
-                  href="/pages"
+                  href="/search"
                   className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
-                    router.pathname.startsWith('/pages')
+                    router.pathname.startsWith('/search')
                       ? 'border-primary-500 text-gray-900 dark:text-dark-text'
                       : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-dark-muted dark:hover:border-dark-border dark:hover:text-dark-text'
                   }`}
                 >
-                  内容
-                </Link>
-                <Link
-                  href="/media"
-                  className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
-                    router.pathname.startsWith('/media')
-                      ? 'border-primary-500 text-gray-900 dark:text-dark-text'
-                      : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-dark-muted dark:hover:border-dark-border dark:hover:text-dark-text'
-                  }`}
-                >
-                  媒体库
+                  搜索内容
                 </Link>
               </div>
             </div>
@@ -198,24 +191,14 @@ export default function MainLayout({
             首页
           </Link>
           <Link
-            href="/pages"
+            href="/search"
             className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${
-              router.pathname.startsWith('/pages')
+              router.pathname.startsWith('/search')
                 ? 'border-primary-500 text-primary-700 bg-primary-50 dark:text-dark-primary dark:bg-dark-border/50'
                 : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700 dark:text-dark-muted dark:hover:bg-dark-border dark:hover:border-dark-border dark:hover:text-dark-text'
             }`}
           >
-            内容
-          </Link>
-          <Link
-            href="/media"
-            className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${
-              router.pathname.startsWith('/media')
-                ? 'border-primary-500 text-primary-700 bg-primary-50 dark:text-dark-primary dark:bg-dark-border/50'
-                : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700 dark:text-dark-muted dark:hover:bg-dark-border dark:hover:border-dark-border dark:hover:text-dark-text'
-            }`}
-          >
-            媒体库
+            搜索内容
           </Link>
         </div>
         <div className="pt-4 pb-3 border-t border-gray-200 dark:border-dark-border">
@@ -258,7 +241,7 @@ export default function MainLayout({
                   href="/search"
                   className="block px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100 dark:text-dark-muted dark:hover:text-dark-text dark:hover:bg-dark-border"
                 >
-                  搜索
+                  搜索内容
                 </Link>
                 <div className="px-4 py-2">
                   <ThemeSwitcher />

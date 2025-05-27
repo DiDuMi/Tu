@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { GetServerSideProps } from 'next'
 import { useRouter } from 'next/router'
+import { useSession } from 'next-auth/react'
+import Link from 'next/link'
 import useSWR from 'swr'
 import { Button } from '@/components/ui/Button'
 import { Pagination } from '@/components/ui/Pagination'
@@ -8,9 +10,10 @@ import { PageTitle } from '@/components/ui/PageTitle'
 import { ContentGridSkeleton } from '@/components/ui/LoadingSpinner'
 import { NoSearchResults, ErrorState } from '@/components/ui/EmptyState'
 import { fetcher } from '@/lib/api'
-import PublicLayout from '@/components/layout/PublicLayout'
+import NewHomeSidebarLayout from '@/components/layout/NewHomeSidebarLayout'
 import ContentCard from '@/components/content/ContentCard'
 import PublicContentFilter from '@/components/content/PublicContentFilter'
+import FloatingButtons from '@/components/ui/FloatingButtons'
 
 interface SearchPageProps {
   initialContents: any
@@ -18,10 +21,11 @@ interface SearchPageProps {
 
 export default function SearchPage({ initialContents }: SearchPageProps) {
   const router = useRouter()
+  const { data: session } = useSession()
   const { q, category, tag, sort, page: pageParam, timeRange } = router.query
 
   const [currentPage, setCurrentPage] = useState(pageParam ? Number(pageParam) : 1)
-  const [pageSize, setPageSize] = useState(12)
+  const pageSize = 12
   const [filters, setFilters] = useState({
     keyword: (q as string) || '',
     category: (category as string) || '',
@@ -122,26 +126,47 @@ export default function SearchPage({ initialContents }: SearchPageProps) {
   const contents = contentsData?.data?.items || []
 
   return (
-    <PublicLayout
+    <NewHomeSidebarLayout
       title={`${filters.keyword ? `"${filters.keyword}" 的搜索结果` : '搜索内容'} - 兔图内容平台`}
-      description={`搜索兔图内容平台上的内容 - ${filters.keyword || '全部内容'}`}
-      keywords={["内容搜索", "知识分享", "社区平台"]}
+      description={`搜索和浏览兔图内容平台上的精彩内容 - ${filters.keyword || '全部内容'}`}
+      keywords={["内容搜索", "搜索内容", "内容分类", "知识分享", "社区平台"]}
     >
       <PageTitle
-        title="内容搜索"
-        description="搜索您感兴趣的内容，发现更多可能"
+        title="搜索内容"
+        description="搜索和浏览您感兴趣的内容，发现更多可能"
       />
 
       <div className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-dark-text">
-            {filters.keyword ? `"${filters.keyword}" 的搜索结果` : '搜索内容'}
-          </h1>
-          {pagination.total > 0 && (
-            <p className="mt-2 text-gray-600 dark:text-dark-muted">
-              找到 {pagination.total} 条相关内容
-            </p>
-          )}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-dark-text">
+              {filters.keyword ? `"${filters.keyword}" 的搜索结果` : '搜索内容'}
+            </h1>
+            {pagination.total > 0 ? (
+              <p className="mt-2 text-gray-600 dark:text-dark-muted">
+                找到 {pagination.total} 条相关内容
+              </p>
+            ) : (
+              <p className="mt-1 text-gray-500 dark:text-dark-muted">搜索和浏览所有内容，按分类和标签查找</p>
+            )}
+          </div>
+
+          <div className="mt-4 md:mt-0 flex gap-2">
+            {!session ? (
+              <Link href="/auth/signin">
+                <Button>登录发布内容</Button>
+              </Link>
+            ) : (
+              <>
+                <Link href="/dashboard/contents/create">
+                  <Button>发布新内容</Button>
+                </Link>
+                <Link href="/admin/media">
+                  <Button variant="outline">媒体管理</Button>
+                </Link>
+              </>
+            )}
+          </div>
         </div>
 
         {/* 搜索框 */}
@@ -214,7 +239,7 @@ export default function SearchPage({ initialContents }: SearchPageProps) {
         <PublicContentFilter
           filters={filters}
           onFilterChange={handleFilterChange}
-          showKeywordSearch={false}
+          showKeywordSearch={true}
           showTimeRange={true}
         />
 
@@ -260,7 +285,10 @@ export default function SearchPage({ initialContents }: SearchPageProps) {
           </div>
         )}
       </div>
-    </PublicLayout>
+
+      {/* 悬浮按钮 */}
+      <FloatingButtons />
+    </NewHomeSidebarLayout>
   )
 }
 

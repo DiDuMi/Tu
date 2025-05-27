@@ -65,7 +65,7 @@ export function PublicContentFilter({
     { value: 'trending', label: '热门推荐' },
     { value: 'most_liked', label: '最多点赞' },
     { value: 'most_commented', label: '最多评论' },
-    { value: 'featured', label: '精选内容' },
+    { value: 'featured', label: '精选推荐' },
     { value: 'home_featured', label: '首页精选' },
     { value: 'home_latest', label: '首页近期流出' },
     { value: 'home_archive', label: '首页往期补档' },

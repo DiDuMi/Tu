@@ -17,6 +17,10 @@ import ContentFavoriteButton from '@/components/content/ContentFavoriteButton'
 import ContentPreviewLimit from '@/components/content/ContentPreviewLimit'
 import TagList from '@/components/content/TagList'
 import VideoContentProcessor from '@/components/content/VideoContentProcessor'
+import OptimizedVideoDisplay from '@/components/content/OptimizedVideoDisplay'
+import DownloadLinksSection from '@/components/content/DownloadLinksSection'
+import DownloadLinksPreview from '@/components/content/DownloadLinksPreview'
+import FloatingButtons from '@/components/ui/FloatingButtons'
 
 interface ContentDetailProps {
   initialData: any
@@ -168,200 +172,221 @@ export default function ContentDetail({ initialData }: ContentDetailProps) {
   }
 
   return (
-    <PublicLayout
-      title={content.title}
-      description={content.summary || content.title}
-      image={content.coverImage}
-      keywords={content.tags?.map((tag: any) => tag.name) || []}
-    >
-      <PageTitle
+    <>
+      <PublicLayout
         title={content.title}
         description={content.summary || content.title}
         image={content.coverImage}
-        keywords={content.tags?.map((tag: any) => tag.name)}
-      />
+        keywords={content.tags?.map((tag: any) => tag.name) || []}
+      >
+        <PageTitle
+          title={content.title}
+          description={content.summary || content.title}
+          image={content.coverImage}
+          keywords={content.tags?.map((tag: any) => tag.name)}
+        />
 
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-4xl mx-auto">
-          {/* 面包屑导航 */}
-          <nav className="flex mb-6 text-sm text-gray-500">
-            <Link href="/" className="hover:text-primary-600">
-              首页
-            </Link>
-            <span className="mx-2">/</span>
-            {content.category && (
-              <>
-                <Link
-                  href={`/categories/${content.category.slug}`}
-                  className="hover:text-primary-600"
-                >
-                  {content.category.name}
-                </Link>
-                <span className="mx-2">/</span>
-              </>
-            )}
-            <span className="text-gray-700 truncate">{content.title}</span>
-          </nav>
-
-          {/* 内容标题 */}
-          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-            {content.title}
-          </h1>
-
-          {/* 内容元信息 */}
-          <div className="flex flex-wrap items-center text-sm text-gray-500 mb-6">
-            {content.author ? (
-              <Link
-                href={`/users/${content.author.id}`}
-                className="flex items-center mr-4 hover:text-primary-600"
-              >
-                <div className="relative h-6 w-6 rounded-full overflow-hidden mr-2">
-                  {content.author.avatar ? (
-                    <img
-                      src={content.author.avatar}
-                      alt={content.author.name}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="h-full w-full bg-gray-300 flex items-center justify-center text-xs text-gray-600">
-                      {content.author.name.charAt(0).toUpperCase()}
-                    </div>
-                  )}
-                </div>
-                <span>{content.author.name}</span>
+        <div className="container mx-auto px-4 py-8">
+          <div className="max-w-4xl mx-auto">
+            {/* 面包屑导航 */}
+            <nav className="flex mb-6 text-sm text-gray-500">
+              <Link href="/" className="hover:text-primary-600">
+                首页
               </Link>
-            ) : (
-              <span className="flex items-center mr-4 text-gray-500">
-                <div className="relative h-6 w-6 rounded-full overflow-hidden mr-2 bg-gray-300 flex items-center justify-center text-xs text-gray-600">
-                  <span>?</span>
-                </div>
-                <span>未知作者</span>
-              </span>
-            )}
+              <span className="mx-2">/</span>
+              {content.category && (
+                <>
+                  <Link
+                    href={`/categories/${content.category.slug}`}
+                    className="hover:text-primary-600"
+                  >
+                    {content.category.name}
+                  </Link>
+                  <span className="mx-2">/</span>
+                </>
+              )}
+              <span className="text-gray-700 truncate">{content.title}</span>
+            </nav>
 
-            <ClientOnlyTime dateString={content.createdAt} className="mr-4" />
+            {/* 内容标题 */}
+            <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+              {content.title}
+            </h1>
 
-            <div className="flex items-center mr-4">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-4 w-4 mr-1"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+            {/* 内容元信息 */}
+            <div className="flex flex-wrap items-center text-sm text-gray-500 mb-6">
+              {content.author ? (
+                <Link
+                  href={`/users/${content.author.id}`}
+                  className="flex items-center mr-4 hover:text-primary-600"
+                >
+                  <div className="relative h-6 w-6 rounded-full overflow-hidden mr-2">
+                    {content.author.avatar ? (
+                      <img
+                        src={content.author.avatar}
+                        alt={content.author.name}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="h-full w-full bg-gray-300 flex items-center justify-center text-xs text-gray-600">
+                        {content.author.name.charAt(0).toUpperCase()}
+                      </div>
+                    )}
+                  </div>
+                  <span>{content.author.name}</span>
+                </Link>
+              ) : (
+                <span className="flex items-center mr-4 text-gray-500">
+                  <div className="relative h-6 w-6 rounded-full overflow-hidden mr-2 bg-gray-300 flex items-center justify-center text-xs text-gray-600">
+                    <span>?</span>
+                  </div>
+                  <span>未知作者</span>
+                </span>
+              )}
+
+              <ClientOnlyTime dateString={content.createdAt} className="mr-4" />
+
+              <div className="flex items-center mr-4">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-4 w-4 mr-1"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                  />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                  />
+                </svg>
+                <span>{content.viewCount}</span>
+              </div>
+
+              <div className="flex items-center">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-4 w-4 mr-1"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                  />
+                </svg>
+                <span>{content.commentCount}</span>
+              </div>
+            </div>
+
+            {/* 封面图片 */}
+            {content.coverImage && !imageError && (
+              <div className="relative h-64 md:h-96 w-full mb-6 rounded-lg overflow-hidden">
+                <img
+                  src={content.coverImage}
+                  alt={content.title}
+                  className="w-full h-full object-cover"
+                  onError={handleImageError}
                 />
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                />
-              </svg>
-              <span>{content.viewCount}</span>
-            </div>
 
-            <div className="flex items-center">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-4 w-4 mr-1"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-                />
-              </svg>
-              <span>{content.commentCount}</span>
-            </div>
-          </div>
-
-          {/* 封面图片 */}
-          {content.coverImage && !imageError && (
-            <div className="relative h-64 md:h-96 w-full mb-6 rounded-lg overflow-hidden">
-              <img
-                src={content.coverImage}
-                alt={content.title}
-                className="w-full h-full object-cover"
-                onError={handleImageError}
-              />
-            </div>
-          )}
-
-          {/* 内容标签 */}
-          {content.tags && content.tags.length > 0 && (
-            <div className="mb-6">
-              <h3 className="text-sm font-medium text-gray-500 mb-2">标签</h3>
-              <TagList
-                tags={content.tags.map((tag: any) => ({
-                  name: tag.name,
-                  slug: tag.slug,
-                  count: tag.useCount || 0
-                }))}
-              />
-            </div>
-          )}
-
-          {/* 内容正文 */}
-          <div className="prose prose-lg max-w-none mb-8 relative">
-            <VideoContentProcessor
-              content={content.content}
-              hasVideoPermission={content.previewInfo?.hasVideoPermission !== false}
-              className="prose-content"
-            />
-
-            {/* 预览限制提示 */}
-            {content.previewInfo?.isLimited && (
-              <ContentPreviewLimit
-                previewPercentage={content.previewInfo.previewPercentage}
-                className="mt-8"
-              />
-            )}
-
-            {/* 视频权限限制提示 */}
-            {content.previewInfo?.hasVideoRestriction && (
-              <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                <div className="flex items-center">
-                  <svg className="w-5 h-5 text-blue-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                  </svg>
-                  <span className="text-blue-700 text-sm">
-                    此内容包含视频，您当前的用户组暂无播放权限。升级会员以观看完整视频内容。
-                  </span>
+                {/* 下载链接预览 - 覆盖在封面图片上 */}
+                <div className="absolute top-4 right-4 z-10">
+                  <DownloadLinksPreview
+                    pageId={content.id}
+                    className="shadow-lg"
+                  />
                 </div>
               </div>
             )}
+
+            {/* 内容标签 */}
+            {content.tags && content.tags.length > 0 && (
+              <div className="mb-6">
+                <h3 className="text-sm font-medium text-gray-500 mb-2">标签</h3>
+                <TagList
+                  tags={content.tags.map((tag: any) => ({
+                    name: tag.name,
+                    slug: tag.slug,
+                    count: tag.useCount || 0
+                  }))}
+                />
+              </div>
+            )}
+
+            {/* 内容正文 */}
+            <div className="prose prose-lg max-w-none mb-8 relative">
+              <OptimizedVideoDisplay
+                content={content.content}
+                hasVideoPermission={content.previewInfo?.hasVideoPermission !== false}
+                className="prose-content"
+              />
+
+              {/* 预览限制提示 */}
+              {content.previewInfo?.isLimited && (
+                <ContentPreviewLimit
+                  previewPercentage={content.previewInfo.previewPercentage}
+                  className="mt-8"
+                />
+              )}
+
+              {/* 视频权限限制提示 */}
+              {content.previewInfo?.hasVideoRestriction && (
+                <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="flex items-center">
+                    <svg className="w-5 h-5 text-blue-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <span className="text-blue-700 text-sm">
+                      此内容包含视频，您当前的用户组暂无播放权限。升级会员以观看完整视频内容。
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* 互动按钮 */}
+            <div className="flex justify-center gap-4 mb-8">
+              <ContentLikeButton
+                liked={liked || content.liked}
+                likeCount={content.likeCount || 0}
+                onLike={handleLike}
+              />
+              <ContentFavoriteButton
+                contentId={content.uuid}
+                initialFavorited={isFavorited}
+              />
+            </div>
+
+            {/* 下载链接区块 */}
+            <div className="mb-8">
+              <DownloadLinksSection
+                pageId={content.id}
+                pageTitle={content.title}
+              />
+            </div>
+
+            {/* 评论区 */}
+            <CommentSection contentId={content.id} contentUuid={content.uuid} />
+
+            {/* 相关内容 */}
+            <RelatedContents contentId={content.id} categoryId={content.category?.id} />
           </div>
-
-          {/* 互动按钮 */}
-          <div className="flex justify-center gap-4 mb-8">
-            <ContentLikeButton
-              liked={liked || content.liked}
-              likeCount={content.likeCount || 0}
-              onLike={handleLike}
-            />
-            <ContentFavoriteButton
-              contentId={content.uuid}
-              initialFavorited={isFavorited}
-            />
-          </div>
-
-          {/* 评论区 */}
-          <CommentSection contentId={content.id} contentUuid={content.uuid} />
-
-          {/* 相关内容 */}
-          <RelatedContents contentId={content.id} categoryId={content.category?.id} />
         </div>
-      </div>
-    </PublicLayout>
+      </PublicLayout>
+
+      {/* 悬浮按钮 - 移到 PublicLayout 外面，避免 PageTransition 的 transform 影响 */}
+      <FloatingButtons />
+    </>
   )
 }
 

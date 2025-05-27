@@ -18,12 +18,12 @@ export function ScreenReaderOnly({ children }: { children: React.ReactNode }) {
 }
 
 // 焦点指示器组件
-export function FocusIndicator({ 
-  visible, 
-  className = '' 
-}: { 
+export function FocusIndicator({
+  visible,
+  className = ''
+}: {
   visible: boolean
-  className?: string 
+  className?: string
 }) {
   if (!visible) return null
 
@@ -54,7 +54,7 @@ export function AccessibleButton({
   ...props
 }: AccessibleButtonProps) {
   const baseClasses = 'inline-flex items-center justify-center font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors'
-  
+
   const variantClasses = {
     primary: 'bg-primary-600 text-white hover:bg-primary-700 disabled:bg-gray-300',
     secondary: 'bg-gray-600 text-white hover:bg-gray-700 disabled:bg-gray-300',
@@ -98,7 +98,7 @@ export function AccessibleButton({
               d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
             />
           </svg>
-          <ScreenReaderOnly id="loading-description">{loadingText}</ScreenReaderOnly>
+          <ScreenReaderOnly>{loadingText}</ScreenReaderOnly>
         </>
       )}
       {isLoading ? loadingText : children}

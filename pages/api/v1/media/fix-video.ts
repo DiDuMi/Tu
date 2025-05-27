@@ -50,7 +50,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     }
 
     const currentPath = path.join(process.cwd(), 'public', media.url)
-    
+
     // 检查文件是否存在
     try {
       await fs.access(currentPath)
@@ -69,24 +69,24 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       const originalExt = path.extname(media.url)
       const timestamp = Date.now()
       const safeFilename = `video_${timestamp}${originalExt}`
-      
+
       // 构建新路径
       const dir = path.dirname(currentPath)
       const newPath = path.join(dir, safeFilename)
       const newUrl = media.url.replace(path.basename(media.url), safeFilename)
-      
+
       // 重命名文件
       await fs.rename(currentPath, newPath)
-      
+
       // 更新数据库
       await prisma.media.update({
         where: { id: media.id },
-        data: { 
+        data: {
           url: newUrl,
-          title: media.title.replace(/[^\w\s\-._]/g, '_') // 同时清理标题
+          title: media.title?.replace(/[^\w\s\-._]/g, '_') || media.url // 同时清理标题
         }
       })
-      
+
       return successResponse(res, {
         oldUrl: media.url,
         newUrl: newUrl,
@@ -102,7 +102,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       const hasSpecialChars = /[^\w\-._/]/.test(media.url)
       const hasChinese = /[\u4e00-\u9fa5]/.test(media.url)
       const hasEmoji = /[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]/u.test(media.url)
-      
+
       return successResponse(res, {
         media: {
           id: media.id,

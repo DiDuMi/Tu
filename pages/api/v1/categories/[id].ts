@@ -1,9 +1,11 @@
 import { NextApiRequest, NextApiResponse } from 'next'
 import { prisma } from '@/lib/prisma'
-import { withErrorHandler, withOperator } from '@/lib/middleware'
+import { withErrorHandler } from '@/lib/middleware'
 import { successResponse, errorResponse } from '@/lib/api'
 import { z } from 'zod'
 import { generateCategorySlug } from '@/lib/content'
+import { getServerSession } from 'next-auth/next'
+import { authOptions } from '@/pages/api/auth/[...nextauth]'
 
 // 更新分类验证模式
 const updateCategorySchema = z.object({
@@ -27,9 +29,14 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     )
   }
 
-  // 查找分类
-  const category = await prisma.category.findUnique({
-    where: { uuid: id },
+  // 查找分类 - 支持通过 UUID 或 slug 查找
+  const category = await prisma.category.findFirst({
+    where: {
+      OR: [
+        { uuid: id },
+        { slug: id }
+      ]
+    },
   })
 
   if (!category) {
@@ -42,7 +49,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     )
   }
 
-  // GET 请求 - 获取分类详情
+  // GET 请求 - 获取分类详情（公开访问）
   if (req.method === 'GET') {
     try {
       // 查询分类详情（包含关联数据）
@@ -97,9 +104,32 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     }
   }
 
-  // PUT 请求 - 更新分类
+  // PUT 请求 - 更新分类（需要认证）
   else if (req.method === 'PUT') {
     try {
+      // 检查用户认证
+      const session = await getServerSession(req, res, authOptions)
+      if (!session) {
+        return errorResponse(
+          res,
+          'AUTH_UNAUTHORIZED',
+          '未授权访问',
+          undefined,
+          401
+        )
+      }
+
+      // 检查用户权限
+      if (session.user.role !== 'ADMIN' && session.user.role !== 'OPERATOR') {
+        return errorResponse(
+          res,
+          'FORBIDDEN',
+          '没有权限更新分类',
+          undefined,
+          403
+        )
+      }
+
       // 验证请求数据
       const validationResult = updateCategorySchema.safeParse(req.body)
 
@@ -263,9 +293,32 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     }
   }
 
-  // DELETE 请求 - 删除分类
+  // DELETE 请求 - 删除分类（需要认证）
   else if (req.method === 'DELETE') {
     try {
+      // 检查用户认证
+      const session = await getServerSession(req, res, authOptions)
+      if (!session) {
+        return errorResponse(
+          res,
+          'AUTH_UNAUTHORIZED',
+          '未授权访问',
+          undefined,
+          401
+        )
+      }
+
+      // 检查用户权限
+      if (session.user.role !== 'ADMIN' && session.user.role !== 'OPERATOR') {
+        return errorResponse(
+          res,
+          'FORBIDDEN',
+          '没有权限删除分类',
+          undefined,
+          403
+        )
+      }
+
       // 获取强制删除参数
       const forceDelete = req.query.force === 'true'
 
@@ -365,5 +418,5 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
   }
 }
 
-// 使用中间件包装处理程序
-export default withErrorHandler(withOperator(handler))
+// 使用中间件包装处理程序 - GET请求公开访问，PUT/DELETE请求需要认证
+export default withErrorHandler(handler)

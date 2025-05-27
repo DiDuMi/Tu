@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Alert } from '@/components/ui/Alert'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card'
-import DashboardLayout from '@/components/layout/DashboardLayout'
+import NewHomeSidebarLayout from '@/components/layout/NewHomeSidebarLayout'
 import { useUserStore } from '@/stores/userStore'
 
 // 表单验证模式
@@ -26,10 +26,10 @@ export default function ProfilePage() {
   const router = useRouter()
   const { data: session, status } = useSession()
   const isLoading = status === 'loading'
-  
+
   // 使用Zustand状态管理
   const { user, isLoading: isUserLoading, error, fetchUserProfile, updateUserProfile, updateUserAvatar } = useUserStore()
-  
+
   // 表单状态
   const [formData, setFormData] = useState<FormData>({
     name: '',
@@ -38,19 +38,19 @@ export default function ProfilePage() {
   const [formErrors, setFormErrors] = useState<Record<string, string>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
-  
+
   // 头像上传
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false)
-  
+
   // 加载用户资料
   useEffect(() => {
     if (session) {
       fetchUserProfile()
     }
   }, [session, fetchUserProfile])
-  
+
   // 更新表单数据
   useEffect(() => {
     if (user) {
@@ -60,19 +60,19 @@ export default function ProfilePage() {
       })
     }
   }, [user])
-  
+
   // 如果未登录，重定向到登录页面
   useEffect(() => {
     if (!isLoading && !session) {
       router.push('/auth/signin?callbackUrl=/dashboard/profile')
     }
   }, [session, isLoading, router])
-  
+
   // 处理表单输入变化
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
     setFormData(prev => ({ ...prev, [name]: value }))
-    
+
     // 清除字段错误
     if (formErrors[name]) {
       setFormErrors(prev => {
@@ -82,11 +82,11 @@ export default function ProfilePage() {
       })
     }
   }
-  
+
   // 处理表单提交
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     // 验证表单
     try {
       profileSchema.parse(formData)
@@ -102,16 +102,16 @@ export default function ProfilePage() {
         return
       }
     }
-    
+
     // 提交表单
     try {
       setIsSubmitting(true)
       setSuccessMessage(null)
-      
+
       await updateUserProfile(formData)
-      
+
       setSuccessMessage('个人资料更新成功')
-      
+
       // 3秒后清除成功消息
       setTimeout(() => {
         setSuccessMessage(null)
@@ -122,50 +122,50 @@ export default function ProfilePage() {
       setIsSubmitting(false)
     }
   }
-  
+
   // 处理头像点击
   const handleAvatarClick = () => {
     fileInputRef.current?.click()
   }
-  
+
   // 处理头像选择
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    
+
     if (!file) return
-    
+
     // 验证文件类型
     if (!file.type.startsWith('image/')) {
       alert('请选择图片文件')
       return
     }
-    
+
     // 验证文件大小（最大2MB）
     if (file.size > 2 * 1024 * 1024) {
       alert('图片大小不能超过2MB')
       return
     }
-    
+
     // 创建预览
     const reader = new FileReader()
     reader.onload = () => {
       setAvatarPreview(reader.result as string)
     }
     reader.readAsDataURL(file)
-    
+
     // 上传头像
     handleAvatarUpload(file)
   }
-  
+
   // 处理头像上传
   const handleAvatarUpload = async (file: File) => {
     try {
       setIsUploadingAvatar(true)
-      
+
       await updateUserAvatar(file)
-      
+
       setSuccessMessage('头像更新成功')
-      
+
       // 3秒后清除成功消息
       setTimeout(() => {
         setSuccessMessage(null)
@@ -177,7 +177,7 @@ export default function ProfilePage() {
       setIsUploadingAvatar(false)
     }
   }
-  
+
   if (isLoading || isUserLoading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
@@ -185,17 +185,17 @@ export default function ProfilePage() {
       </div>
     )
   }
-  
+
   return (
-    <DashboardLayout>
+    <NewHomeSidebarLayout>
       <Head>
         <title>个人资料 - 兔图</title>
         <meta name="description" content="编辑您的兔图个人资料" />
       </Head>
-      
+
       <div className="container mx-auto px-4 py-8">
         <h1 className="text-2xl font-bold text-gray-900 mb-6">个人资料</h1>
-        
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* 左侧：头像 */}
           <div className="lg:col-span-1">
@@ -222,14 +222,14 @@ export default function ProfilePage() {
                         {user?.name?.charAt(0).toUpperCase() || 'U'}
                       </div>
                     )}
-                    
+
                     {isUploadingAvatar && (
                       <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
                         <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-white"></div>
                       </div>
                     )}
                   </div>
-                  
+
                   <input
                     type="file"
                     ref={fileInputRef}
@@ -238,7 +238,7 @@ export default function ProfilePage() {
                     onChange={handleAvatarChange}
                     disabled={isUploadingAvatar}
                   />
-                  
+
                   <Button
                     variant="outline"
                     onClick={handleAvatarClick}
@@ -246,7 +246,7 @@ export default function ProfilePage() {
                   >
                     {isUploadingAvatar ? '上传中...' : '更换头像'}
                   </Button>
-                  
+
                   <p className="mt-2 text-xs text-gray-500 text-center">
                     支持JPG、PNG格式，最大2MB
                   </p>
@@ -254,7 +254,7 @@ export default function ProfilePage() {
               </CardContent>
             </Card>
           </div>
-          
+
           {/* 右侧：个人资料表单 */}
           <div className="lg:col-span-2">
             <Card>
@@ -267,13 +267,13 @@ export default function ProfilePage() {
                     {error}
                   </Alert>
                 )}
-                
+
                 {successMessage && (
                   <Alert variant="success" className="mb-4">
                     {successMessage}
                   </Alert>
                 )}
-                
+
                 <form onSubmit={handleSubmit}>
                   <div className="space-y-4">
                     <div>
@@ -292,7 +292,7 @@ export default function ProfilePage() {
                         邮箱地址不可修改
                       </p>
                     </div>
-                    
+
                     <div>
                       <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
                         用户名
@@ -310,7 +310,7 @@ export default function ProfilePage() {
                         <p className="mt-1 text-sm text-error-500">{formErrors.name}</p>
                       )}
                     </div>
-                    
+
                     <div>
                       <label htmlFor="bio" className="block text-sm font-medium text-gray-700 mb-1">
                         个人简介
@@ -334,7 +334,7 @@ export default function ProfilePage() {
                         {(formData.bio?.length || 0)}/200
                       </p>
                     </div>
-                    
+
                     <div className="flex justify-end">
                       <Button
                         type="submit"
@@ -351,13 +351,13 @@ export default function ProfilePage() {
           </div>
         </div>
       </div>
-    </DashboardLayout>
+    </NewHomeSidebarLayout>
   )
 }
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
   const session = await getServerSession(context.req, context.res, authOptions)
-  
+
   if (!session) {
     return {
       redirect: {
@@ -366,7 +366,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
       },
     }
   }
-  
+
   return {
     props: {},
   }

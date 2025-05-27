@@ -1,15 +1,20 @@
-import { PlusIcon, PencilIcon, TrashIcon, ChevronRightIcon, ChevronDownIcon } from '@heroicons/react/24/outline'
+import React, { useState } from 'react'
+
+import { PlusIcon } from '@heroicons/react/24/outline'
 import { GetServerSideProps } from 'next'
 import { getSession } from 'next-auth/react'
-import React, { useState } from 'react'
 import useSWR from 'swr'
 
+import { fetcher } from '@/lib/fetcher'
+
+import CategoryDeleteConfirm from '@/components/admin/CategoryDeleteConfirm'
+import CategoryForm from '@/components/admin/CategoryForm'
+import CategoryTree from '@/components/admin/CategoryTree'
 import AdminLayout from '@/components/layout/AdminLayout'
 import { Alert } from '@/components/ui/Alert'
 import { Button } from '@/components/ui/Button'
 import { Modal } from '@/components/ui/Modal'
 import { Spinner } from '@/components/ui/Spinner'
-import { fetcher } from '@/lib/fetcher'
 
 interface MediaCategory {
   id: number
@@ -23,81 +28,7 @@ interface MediaCategory {
   updatedAt: string
 }
 
-interface CategoryTreeProps {
-  categories: MediaCategory[]
-  level?: number
-  onEdit: (_category: MediaCategory) => void
-  onDelete: (_category: MediaCategory) => void
-}
-
-const CategoryTree: React.FC<CategoryTreeProps> = ({
-  categories,
-  level = 0,
-  onEdit,
-  onDelete
-}) => {
-  const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({})
-
-  const toggleExpand = (uuid: string) => {
-    setExpandedCategories(prev => ({
-      ...prev,
-      [uuid]: !prev[uuid]
-    }))
-  }
-
-  return (
-    <ul className={`pl-${level > 0 ? 4 : 0}`}>
-      {categories.map(category => (
-        <li key={category.uuid} className="py-2">
-          <div className="flex items-center justify-between border-b border-gray-100 pb-2">
-            <div className="flex items-center">
-              {category.children && category.children.length > 0 ? (
-                <button
-                  onClick={() => toggleExpand(category.uuid)}
-                  className="mr-2 text-gray-500 hover:text-gray-700"
-                >
-                  {expandedCategories[category.uuid] ? (
-                    <ChevronDownIcon className="h-4 w-4" />
-                  ) : (
-                    <ChevronRightIcon className="h-4 w-4" />
-                  )}
-                </button>
-              ) : (
-                <span className="ml-6"></span>
-              )}
-              <span className="font-medium">{category.name}</span>
-              {category.description && (
-                <span className="ml-2 text-sm text-gray-500">({category.description})</span>
-              )}
-            </div>
-            <div className="flex space-x-2">
-              <button
-                onClick={() => onEdit(category)}
-                className="text-blue-600 hover:text-blue-800"
-              >
-                <PencilIcon className="h-4 w-4" />
-              </button>
-              <button
-                onClick={() => onDelete(category)}
-                className="text-red-600 hover:text-red-800"
-              >
-                <TrashIcon className="h-4 w-4" />
-              </button>
-            </div>
-          </div>
-          {category.children && category.children.length > 0 && expandedCategories[category.uuid] && (
-            <CategoryTree
-              categories={category.children}
-              level={level + 1}
-              onEdit={onEdit}
-              onDelete={onDelete}
-            />
-          )}
-        </li>
-      ))}
-    </ul>
-  )
-}
+// CategoryTree组件已移至 @/components/admin/CategoryTree
 
 const MediaCategoriesPage: React.FC = () => {
   const { data, error, mutate } = useSWR<MediaCategory[]>('/api/v1/media/categories', fetcher)
@@ -295,73 +226,14 @@ const MediaCategoriesPage: React.FC = () => {
         onClose={() => setIsCreateModalOpen(false)}
         title="添加媒体分类"
       >
-        <div className="space-y-4">
-          <div>
-            <label className="mb-1 block text-sm font-medium">分类名称 <span className="text-red-500">*</span></label>
-            <input
-              type="text"
-              name="name"
-              value={formData.name}
-              onChange={handleInputChange}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none"
-            />
-            {formErrors.name && <p className="mt-1 text-sm text-red-500">{formErrors.name}</p>}
-          </div>
-
-          <div>
-            <label className="mb-1 block text-sm font-medium">分类别名 <span className="text-red-500">*</span></label>
-            <input
-              type="text"
-              name="slug"
-              value={formData.slug}
-              onChange={handleInputChange}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none"
-            />
-            <p className="mt-1 text-xs text-gray-500">用于URL，只能包含小写字母、数字和连字符</p>
-            {formErrors.slug && <p className="mt-1 text-sm text-red-500">{formErrors.slug}</p>}
-          </div>
-
-          <div>
-            <label className="mb-1 block text-sm font-medium">描述</label>
-            <textarea
-              name="description"
-              value={formData.description}
-              onChange={handleInputChange}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none"
-              rows={3}
-            />
-          </div>
-
-          <div>
-            <label className="mb-1 block text-sm font-medium">父分类</label>
-            <select
-              name="parentId"
-              value={formData.parentId}
-              onChange={handleInputChange}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none"
-            >
-              <option value="">无 (顶级分类)</option>
-              {data?.map(category => (
-                <option key={category.id} value={category.id}>
-                  {category.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {formErrors.submit && (
-            <Alert variant="error">{formErrors.submit}</Alert>
-          )}
-
-          <div className="flex justify-end space-x-3 pt-4">
-            <Button variant="outline" onClick={() => setIsCreateModalOpen(false)}>
-              取消
-            </Button>
-            <Button onClick={handleCreateCategory}>
-              创建
-            </Button>
-          </div>
-        </div>
+        <CategoryForm
+          formData={formData}
+          formErrors={formErrors}
+          categories={data}
+          onInputChange={handleInputChange}
+          onSubmit={handleCreateCategory}
+          onCancel={() => setIsCreateModalOpen(false)}
+        />
       </Modal>
 
       {/* 编辑分类模态框 */}
@@ -370,73 +242,16 @@ const MediaCategoriesPage: React.FC = () => {
         onClose={() => setIsEditModalOpen(false)}
         title="编辑媒体分类"
       >
-        <div className="space-y-4">
-          <div>
-            <label className="mb-1 block text-sm font-medium">分类名称 <span className="text-red-500">*</span></label>
-            <input
-              type="text"
-              name="name"
-              value={formData.name}
-              onChange={handleInputChange}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none"
-            />
-            {formErrors.name && <p className="mt-1 text-sm text-red-500">{formErrors.name}</p>}
-          </div>
-
-          <div>
-            <label className="mb-1 block text-sm font-medium">分类别名 <span className="text-red-500">*</span></label>
-            <input
-              type="text"
-              name="slug"
-              value={formData.slug}
-              onChange={handleInputChange}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none"
-            />
-            <p className="mt-1 text-xs text-gray-500">用于URL，只能包含小写字母、数字和连字符</p>
-            {formErrors.slug && <p className="mt-1 text-sm text-red-500">{formErrors.slug}</p>}
-          </div>
-
-          <div>
-            <label className="mb-1 block text-sm font-medium">描述</label>
-            <textarea
-              name="description"
-              value={formData.description}
-              onChange={handleInputChange}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none"
-              rows={3}
-            />
-          </div>
-
-          <div>
-            <label className="mb-1 block text-sm font-medium">父分类</label>
-            <select
-              name="parentId"
-              value={formData.parentId}
-              onChange={handleInputChange}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none"
-            >
-              <option value="">无 (顶级分类)</option>
-              {data?.filter(c => c.id !== currentCategory?.id).map(category => (
-                <option key={category.id} value={category.id}>
-                  {category.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {formErrors.submit && (
-            <Alert variant="error">{formErrors.submit}</Alert>
-          )}
-
-          <div className="flex justify-end space-x-3 pt-4">
-            <Button variant="outline" onClick={() => setIsEditModalOpen(false)}>
-              取消
-            </Button>
-            <Button onClick={handleEditCategory}>
-              保存
-            </Button>
-          </div>
-        </div>
+        <CategoryForm
+          formData={formData}
+          formErrors={formErrors}
+          categories={data}
+          currentCategory={currentCategory}
+          isEdit={true}
+          onInputChange={handleInputChange}
+          onSubmit={handleEditCategory}
+          onCancel={() => setIsEditModalOpen(false)}
+        />
       </Modal>
 
       {/* 删除确认模态框 */}
@@ -445,21 +260,11 @@ const MediaCategoriesPage: React.FC = () => {
         onClose={() => setIsDeleteModalOpen(false)}
         title="删除媒体分类"
       >
-        <div className="space-y-4">
-          <p>确定要删除分类 &ldquo;{currentCategory?.name}&rdquo; 吗？</p>
-          <p className="text-sm text-red-500">
-            注意：如果该分类下有子分类或媒体文件，将无法删除。
-          </p>
-
-          <div className="flex justify-end space-x-3 pt-4">
-            <Button variant="outline" onClick={() => setIsDeleteModalOpen(false)}>
-              取消
-            </Button>
-            <Button variant="danger" onClick={handleDeleteCategory}>
-              删除
-            </Button>
-          </div>
-        </div>
+        <CategoryDeleteConfirm
+          category={currentCategory}
+          onConfirm={handleDeleteCategory}
+          onCancel={() => setIsDeleteModalOpen(false)}
+        />
       </Modal>
     </AdminLayout>
   )

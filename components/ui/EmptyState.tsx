@@ -163,9 +163,9 @@ export function NoFavorites({ onBrowseContent }: { onBrowseContent?: () => void 
         </svg>
       }
       title="还没有收藏任何内容"
-      description="浏览内容并点击心形图标来收藏您喜欢的内容"
+      description="搜索内容并点击心形图标来收藏您喜欢的内容"
       action={onBrowseContent ? {
-        label: '浏览内容',
+        label: '搜索内容',
         onClick: onBrowseContent,
         variant: 'primary'
       } : undefined}
@@ -173,14 +173,14 @@ export function NoFavorites({ onBrowseContent }: { onBrowseContent?: () => void 
   )
 }
 
-export function ErrorState({ 
-  title = '出现了一些问题', 
+export function ErrorState({
+  title = '出现了一些问题',
   description = '请稍后重试，或联系技术支持',
-  onRetry 
-}: { 
+  onRetry
+}: {
   title?: string
   description?: string
-  onRetry?: () => void 
+  onRetry?: () => void
 }) {
   return (
     <EmptyState

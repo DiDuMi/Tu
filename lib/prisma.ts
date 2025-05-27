@@ -1,5 +1,5 @@
 import { PrismaClient } from '@prisma/client'
-import { applyPrismaMiddleware } from './prisma-middleware'
+import { createExtendedPrismaClient } from './prisma-middleware'
 import { applyQueryCacheMiddleware } from './query-cache'
 
 // PrismaClient是一个重量级对象，不应该在每次请求时都创建新实例
@@ -41,11 +41,11 @@ const createPrismaClient = () => {
     log: getPrismaLogLevels() as any,
   })
 
-  // 应用中间件
-  const clientWithMiddleware = applyPrismaMiddleware(client)
+  // 应用扩展功能
+  const clientWithExtensions = createExtendedPrismaClient(client)
 
   // 应用查询缓存中间件
-  return applyQueryCacheMiddleware(clientWithMiddleware)
+  return applyQueryCacheMiddleware(clientWithExtensions)
 }
 
 // 导出单例PrismaClient实例

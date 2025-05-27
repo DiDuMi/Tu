@@ -177,7 +177,50 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       })
     } else {
       // 创建新草稿
-      console.log('创建新草稿')
+      console.log(`创建新草稿，用户ID: ${userId}, 分类ID: ${categoryId}`)
+
+      // 验证用户是否存在且未被删除
+      const userExists = await prisma.user.findFirst({
+        where: {
+          id: userId,
+          deletedAt: null
+        },
+        select: { id: true, status: true }
+      })
+
+      if (!userExists) {
+        console.error(`用户不存在: ${userId}`)
+        console.error(`Session用户ID: ${userId}, Session邮箱: ${session.user.email}`)
+
+        // 尝试通过邮箱查找用户
+        const userByEmail = await prisma.user.findUnique({
+          where: {
+            email: session.user.email!,
+            deletedAt: null
+          },
+          select: { id: true, status: true }
+        })
+
+        if (userByEmail) {
+          console.log(`通过邮箱找到用户，实际ID: ${userByEmail.id}`)
+          return errorResponse(
+            res,
+            'SESSION_USER_MISMATCH',
+            '用户会话信息不匹配，请重新登录',
+            { actualUserId: userByEmail.id, sessionUserId: userId },
+            401
+          )
+        }
+
+        return errorResponse(
+          res,
+          'USER_NOT_FOUND',
+          '用户不存在，请重新登录',
+          undefined,
+          404
+        )
+      }
+
       page = await prisma.page.create({
         data: {
           title: originalTitle,
